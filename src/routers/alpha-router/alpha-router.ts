@@ -1,4 +1,38 @@
 import { ChainId } from '@baseswapfi/sdk-core';
+import { BaseProvider } from '@ethersproject/providers';
+
+import {
+  // CachedRoutes,
+  // CacheMode,
+  // CachingGasStationProvider,
+  // CachingTokenProviderWithFallback,
+  // CachingV2PoolProvider,
+  // CachingV2SubgraphProvider,
+  // CachingV3PoolProvider,
+  // CachingV3SubgraphProvider,
+  // EIP1559GasPriceProvider,
+  // ETHGasStationInfoProvider,
+  // IOnChainQuoteProvider,
+  // IRouteCachingProvider,
+  // ISwapRouterProvider,
+  // ITokenPropertiesProvider,
+  // IV2QuoteProvider,
+  // IV2SubgraphProvider,
+  // LegacyGasPriceProvider,
+  // NodeJSCache,
+  // OnChainGasPriceProvider,
+  // OnChainQuoteProvider,
+  // Simulator,
+  // StaticV2SubgraphProvider,
+  // StaticV3SubgraphProvider,
+  // SwapRouterProvider,
+  // TokenPropertiesProvider,
+  UniswapMulticallProvider,
+  // URISubgraphProvider,
+  // V2QuoteProvider,
+  // V2SubgraphProviderWithFallBacks,
+  // V3SubgraphProviderWithFallBacks,
+} from '../../providers';
 
 export type AlphaRouterParams = {
   /**
@@ -7,16 +41,16 @@ export type AlphaRouterParams = {
 
   chainId: ChainId;
 
-  // /**
-  //  * The Web3 provider for getting on-chain data.
-  //  */
-  // provider: BaseProvider;
+  /**
+   * The Web3 provider for getting on-chain data.
+   */
+  provider: BaseProvider;
 
-  // /**
-  //  * The provider to use for making multicalls. Used for getting on-chain data
-  //  * like pools, tokens, quotes in batch.
-  //  */
-  // multicall2Provider?: UniswapMulticallProvider;
+  /**
+   * The provider to use for making multicalls. Used for getting on-chain data
+   * like pools, tokens, quotes in batch.
+   */
+  multicall2Provider?: UniswapMulticallProvider;
   // /**
   //  * The provider for getting all pools that exist on V3 from the Subgraph. The pools
   //  * from this provider are filtered during the algorithm to a set of candidate pools.
