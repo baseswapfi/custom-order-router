@@ -1,6 +1,6 @@
 import { ChainId } from '@baseswapfi/sdk-core';
 import { BaseProvider } from '@ethersproject/providers';
-
+import { IV3SubgraphProvider } from '../../providers/v3/subgraph-provider';
 import {
   // CachedRoutes,
   // CacheMode,
@@ -51,11 +51,11 @@ export type AlphaRouterParams = {
    * like pools, tokens, quotes in batch.
    */
   multicall2Provider?: UniswapMulticallProvider;
-  // /**
-  //  * The provider for getting all pools that exist on V3 from the Subgraph. The pools
-  //  * from this provider are filtered during the algorithm to a set of candidate pools.
-  //  */
-  // v3SubgraphProvider?: IV3SubgraphProvider;
+  /**
+   * The provider for getting all pools that exist on V3 from the Subgraph. The pools
+   * from this provider are filtered during the algorithm to a set of candidate pools.
+   */
+  v3SubgraphProvider?: IV3SubgraphProvider;
   // /**
   //  * The provider for getting data about V3 pools.
   //  */

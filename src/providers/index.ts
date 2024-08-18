@@ -31,6 +31,6 @@ export * from './multicall-uniswap-provider';
 // export * from './v3/caching-subgraph-provider';
 // export * from './v3/pool-provider';
 // export * from './v3/static-subgraph-provider';
-// export * from './v3/subgraph-provider';
+export * from './v3/subgraph-provider';
 // export * from './v3/subgraph-provider-with-fallback';
 // export * from './v3/uri-subgraph-provider';
