@@ -2,6 +2,7 @@ import { ChainId } from '@baseswapfi/sdk-core';
 import { BaseProvider } from '@ethersproject/providers';
 import { IV3SubgraphProvider } from '../../providers/v3/subgraph-provider';
 import {
+  IV3PoolProvider,
   // CachedRoutes,
   // CacheMode,
   // CachingGasStationProvider,
@@ -56,10 +57,10 @@ export type AlphaRouterParams = {
    * from this provider are filtered during the algorithm to a set of candidate pools.
    */
   v3SubgraphProvider?: IV3SubgraphProvider;
-  // /**
-  //  * The provider for getting data about V3 pools.
-  //  */
-  // v3PoolProvider?: IV3PoolProvider;
+  /**
+   * The provider for getting data about V3 pools.
+   */
+  v3PoolProvider?: IV3PoolProvider;
   // /**
   //  * The provider for getting V3 quotes.
   //  */
