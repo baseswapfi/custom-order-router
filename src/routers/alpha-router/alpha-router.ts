@@ -1,4 +1,4 @@
-import { ChainId } from '@baseswapfi/sdk-core';
+import { ChainId, Currency, TradeType } from '@baseswapfi/sdk-core';
 import { BaseProvider } from '@ethersproject/providers';
 import { IV3SubgraphProvider } from '../../providers/v3/subgraph-provider';
 import {
@@ -34,6 +34,18 @@ import {
   // V2SubgraphProviderWithFallBacks,
   // V3SubgraphProviderWithFallBacks,
 } from '../../providers';
+import { CurrencyAmount } from '../../util/amounts';
+import {
+  IRouter,
+  ISwapToRatio,
+  SwapAndAddConfig,
+  SwapAndAddOptions,
+  SwapOptions,
+  SwapRoute,
+  SwapToRatioResponse,
+} from '../router';
+import { Position } from '@baseswapfi/v3-sdk2';
+import { DEFAULT_ROUTING_CONFIG_BY_CHAIN } from './config';
 
 export type AlphaRouterParams = {
   /**
@@ -150,6 +162,8 @@ export type AlphaRouterParams = {
   // v2Supported?: ChainId[];
 };
 
+export type AlphaRouterConfig = {};
+
 export class MapWithLowerCaseKey<V> extends Map<string, V> {
   override set(key: string, value: V): this {
     return super.set(key.toLowerCase(), value);
@@ -163,12 +177,49 @@ export class LowerCaseStringArray extends Array<string> {
   }
 }
 
-// export class AlphaRouter
-//   implements
-//     IRouter<AlphaRouterConfig>,
-//     ISwapToRatio<AlphaRouterConfig, SwapAndAddConfig>
-// {
+export class AlphaRouter
+  implements IRouter<AlphaRouterConfig>, ISwapToRatio<AlphaRouterConfig, SwapAndAddConfig>
+{
+  protected chainId: ChainId;
 
-// }
+  constructor({ chainId }: AlphaRouterParams) {
+    this.chainId = chainId;
+  }
 
-export class AlphaRouter {}
+  public async routeToRatio(
+    token0Balance: CurrencyAmount,
+    token1Balance: CurrencyAmount,
+    position: Position,
+    swapAndAddConfig: SwapAndAddConfig,
+    swapAndAddOptions?: SwapAndAddOptions,
+    routingConfig: Partial<AlphaRouterConfig> = DEFAULT_ROUTING_CONFIG_BY_CHAIN(this.chainId)
+  ): Promise<SwapToRatioResponse> {
+    console.log(token0Balance);
+    console.log(token1Balance);
+    console.log(position);
+    console.log(swapAndAddConfig);
+    console.log(swapAndAddOptions);
+    console.log(routingConfig);
+
+    throw new Error('Method not implemented.');
+  }
+
+  /**
+   * @inheritdoc IRouter
+   */
+  public async route(
+    amount: CurrencyAmount,
+    quoteCurrency: Currency,
+    tradeType: TradeType,
+    swapConfig?: SwapOptions,
+    partialRoutingConfig: Partial<AlphaRouterConfig> = {}
+  ): Promise<SwapRoute | null> {
+    console.log(amount);
+    console.log(quoteCurrency);
+    console.log(tradeType);
+    console.log(swapConfig);
+    console.log(partialRoutingConfig);
+
+    return null;
+  }
+}
