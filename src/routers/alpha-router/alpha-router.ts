@@ -35,6 +35,9 @@ import {
   // V2SubgraphProviderWithFallBacks,
   // V3SubgraphProviderWithFallBacks,
 } from '../../providers';
+
+import { IPortionProvider, PortionProvider } from '../../providers/portion-provider';
+
 import { CurrencyAmount } from '../../util/amounts';
 import {
   IRouter,
@@ -51,6 +54,7 @@ import { DEFAULT_ROUTING_CONFIG_BY_CHAIN } from './config';
 import NodeCache from 'node-cache';
 import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
 import { metric, MetricLoggerUnit } from '../../util';
+import { ZERO } from '@baseswapfi/router-sdk';
 
 export type AlphaRouterParams = {
   /**
@@ -156,10 +160,10 @@ export type AlphaRouterParams = {
    */
   tokenPropertiesProvider?: ITokenPropertiesProvider;
 
-  // /**
-  //  * A provider for computing the portion-related data for routes and quotes.
-  //  */
-  // portionProvider?: IPortionProvider;
+  /**
+   * A provider for computing the portion-related data for routes and quotes.
+   */
+  portionProvider?: IPortionProvider;
 
   // /**
   //  * All the supported v2 chains configuration
@@ -188,8 +192,9 @@ export class AlphaRouter
   protected chainId: ChainId;
   protected provider: BaseProvider;
   protected tokenPropertiesProvider: ITokenPropertiesProvider;
+  protected portionProvider: IPortionProvider;
 
-  constructor({ chainId, tokenPropertiesProvider, provider }: AlphaRouterParams) {
+  constructor({ chainId, tokenPropertiesProvider, provider, portionProvider }: AlphaRouterParams) {
     this.chainId = chainId;
     this.provider = provider;
 
@@ -202,6 +207,8 @@ export class AlphaRouter
         new OnChainTokenFeeFetcher(this.chainId, provider)
       );
     }
+
+    this.portionProvider = portionProvider ?? new PortionProvider();
   }
 
   public async routeToRatio(
@@ -285,6 +292,22 @@ export class AlphaRouter
     }
 
     if (tradeType === TradeType.EXACT_OUTPUT) {
+      const portionAmount = this.portionProvider.getPortionAmount(
+        amount,
+        tradeType,
+        feeTakenOnTransfer,
+        externalTransferFailed,
+        swapConfig
+      );
+      if (portionAmount && portionAmount.greaterThan(ZERO)) {
+        // In case of exact out swap, before we route, we need to make sure that the
+        // token out amount accounts for flat portion, and token in amount after the best swap route contains the token in equivalent of portion.
+        // In other words, in case a pool's LP fee bps is lower than the portion bps (0.01%/0.05% for v3), a pool can go insolvency.
+        // This is because instead of the swapper being responsible for the portion,
+        // the pool instead gets responsible for the portion.
+        // The addition below avoids that situation.
+        amount = amount.add(portionAmount);
+      }
     }
 
     return null;
