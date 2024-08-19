@@ -220,6 +220,82 @@ export class AlphaRouter
     console.log(swapConfig);
     console.log(partialRoutingConfig);
 
+    // const originalAmount = amount;
+
+    const { currencyIn, currencyOut } = this.determineCurrencyInOutFromTradeType(
+      tradeType,
+      amount,
+      quoteCurrency
+    );
+
+    const tokenIn = currencyIn.wrapped;
+    const tokenOut = currencyOut.wrapped;
+
+    console.log('tokenIn', tokenIn);
+    console.log('tokenOut', tokenOut);
+
+    //   const tokenOutProperties =
+    //   await this.tokenPropertiesProvider.getTokensProperties(
+    //     [tokenOut],
+    //     partialRoutingConfig
+    //   );
+
+    // const feeTakenOnTransfer =
+    //   tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult
+    //     ?.feeTakenOnTransfer;
+    // const externalTransferFailed =
+    //   tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult
+    //     ?.externalTransferFailed;
+
+    // // We want to log the fee on transfer output tokens that we are taking fee or not
+    // // Ideally the trade size (normalized in USD) would be ideal to log here, but we don't have spot price of output tokens here.
+    // // We have to make sure token out is FOT with either buy/sell fee bps > 0
+    // if (tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.buyFeeBps?.gt(0) ||
+    //     tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.sellFeeBps?.gt(0)) {
+    //   if (feeTakenOnTransfer || externalTransferFailed) {
+    //     // also to be extra safe, in case of FOT with feeTakenOnTransfer or externalTransferFailed,
+    //     // we nullify the fee and flat fee to avoid any potential issues.
+    //     // although neither web nor wallet should use the calldata returned from routing/SOR
+    //     if (swapConfig?.type === SwapType.UNIVERSAL_ROUTER) {
+    //       swapConfig.fee = undefined;
+    //       swapConfig.flatFee = undefined;
+    //     }
+
+    //     metric.putMetric(
+    //       'TokenOutFeeOnTransferNotTakingFee',
+    //       1,
+    //       MetricLoggerUnit.Count
+    //     );
+    //   } else {
+    //     metric.putMetric(
+    //       'TokenOutFeeOnTransferTakingFee',
+    //       1,
+    //       MetricLoggerUnit.Count
+    //     );
+    //   }
+    // }
+
+    if (tradeType === TradeType.EXACT_OUTPUT) {
+    }
+
     return null;
+  }
+
+  private determineCurrencyInOutFromTradeType(
+    tradeType: TradeType,
+    amount: CurrencyAmount,
+    quoteCurrency: Currency
+  ) {
+    if (tradeType === TradeType.EXACT_INPUT) {
+      return {
+        currencyIn: amount.currency,
+        currencyOut: quoteCurrency,
+      };
+    } else {
+      return {
+        currencyIn: quoteCurrency,
+        currencyOut: amount.currency,
+      };
+    }
   }
 }
