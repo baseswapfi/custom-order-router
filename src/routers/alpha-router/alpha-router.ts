@@ -16,7 +16,7 @@ import {
   // IOnChainQuoteProvider,
   // IRouteCachingProvider,
   // ISwapRouterProvider,
-  // ITokenPropertiesProvider,
+  ITokenPropertiesProvider,
   // IV2QuoteProvider,
   // IV2SubgraphProvider,
   // LegacyGasPriceProvider,
@@ -27,8 +27,9 @@ import {
   // StaticV2SubgraphProvider,
   // StaticV3SubgraphProvider,
   // SwapRouterProvider,
-  // TokenPropertiesProvider,
+  TokenPropertiesProvider,
   UniswapMulticallProvider,
+  NodeJSCache,
   // URISubgraphProvider,
   // V2QuoteProvider,
   // V2SubgraphProviderWithFallBacks,
@@ -46,6 +47,8 @@ import {
 } from '../router';
 import { Position } from '@baseswapfi/v3-sdk2';
 import { DEFAULT_ROUTING_CONFIG_BY_CHAIN } from './config';
+import NodeCache from 'node-cache';
+import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
 
 export type AlphaRouterParams = {
   /**
@@ -146,10 +149,10 @@ export type AlphaRouterParams = {
   //  */
   // routeCachingProvider?: IRouteCachingProvider;
 
-  // /**
-  //  * A provider for getting token properties for special tokens like fee-on-transfer tokens.
-  //  */
-  // tokenPropertiesProvider?: ITokenPropertiesProvider;
+  /**
+   * A provider for getting token properties for special tokens like fee-on-transfer tokens.
+   */
+  tokenPropertiesProvider?: ITokenPropertiesProvider;
 
   // /**
   //  * A provider for computing the portion-related data for routes and quotes.
@@ -181,9 +184,22 @@ export class AlphaRouter
   implements IRouter<AlphaRouterConfig>, ISwapToRatio<AlphaRouterConfig, SwapAndAddConfig>
 {
   protected chainId: ChainId;
+  protected provider: BaseProvider;
+  protected tokenPropertiesProvider: ITokenPropertiesProvider;
 
-  constructor({ chainId }: AlphaRouterParams) {
+  constructor({ chainId, tokenPropertiesProvider, provider }: AlphaRouterParams) {
     this.chainId = chainId;
+    this.provider = provider;
+
+    if (tokenPropertiesProvider) {
+      this.tokenPropertiesProvider = tokenPropertiesProvider;
+    } else {
+      this.tokenPropertiesProvider = new TokenPropertiesProvider(
+        this.chainId,
+        new NodeJSCache(new NodeCache({ stdTTL: 86400, useClones: false })),
+        new OnChainTokenFeeFetcher(this.chainId, provider)
+      );
+    }
   }
 
   public async routeToRatio(
@@ -234,18 +250,15 @@ export class AlphaRouter
     console.log('tokenIn', tokenIn);
     console.log('tokenOut', tokenOut);
 
-    //   const tokenOutProperties =
-    //   await this.tokenPropertiesProvider.getTokensProperties(
-    //     [tokenOut],
-    //     partialRoutingConfig
-    //   );
+    // const tokenOutProperties = await this.tokenPropertiesProvider.getTokensProperties(
+    //   [tokenOut],
+    //   partialRoutingConfig
+    // );
 
     // const feeTakenOnTransfer =
-    //   tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult
-    //     ?.feeTakenOnTransfer;
+    //   tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.feeTakenOnTransfer;
     // const externalTransferFailed =
-    //   tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult
-    //     ?.externalTransferFailed;
+    //   tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.externalTransferFailed;
 
     // // We want to log the fee on transfer output tokens that we are taking fee or not
     // // Ideally the trade size (normalized in USD) would be ideal to log here, but we don't have spot price of output tokens here.

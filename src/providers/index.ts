@@ -1,5 +1,5 @@
-// export * from './cache';
-// export * from './cache-node';
+export * from './cache';
+export * from './cache-node';
 // export * from './caching-gas-provider';
 // export * from './caching-token-list-provider';
 // export * from './caching-token-provider';
@@ -15,8 +15,9 @@ export * from './multicall-uniswap-provider';
 export * from './simulation-provider';
 // export * from './static-gas-price-provider';
 // export * from './swap-router-provider';
+export * from './token-properties-provider';
 export * from './token-provider';
-// export * from './token-validator-provider';
+export * from './token-validator-provider';
 // export * from './uri-subgraph-provider';
 // export * from './caching/route';
 // export * from './v2/caching-pool-provider';
