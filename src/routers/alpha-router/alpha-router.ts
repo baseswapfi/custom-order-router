@@ -44,11 +44,13 @@ import {
   SwapOptions,
   SwapRoute,
   SwapToRatioResponse,
+  SwapType,
 } from '../router';
 import { Position } from '@baseswapfi/v3-sdk2';
 import { DEFAULT_ROUTING_CONFIG_BY_CHAIN } from './config';
 import NodeCache from 'node-cache';
 import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
+import { metric, MetricLoggerUnit } from '../../util';
 
 export type AlphaRouterParams = {
   /**
@@ -250,43 +252,37 @@ export class AlphaRouter
     console.log('tokenIn', tokenIn);
     console.log('tokenOut', tokenOut);
 
-    // const tokenOutProperties = await this.tokenPropertiesProvider.getTokensProperties(
-    //   [tokenOut],
-    //   partialRoutingConfig
-    // );
+    const tokenOutProperties = await this.tokenPropertiesProvider.getTokensProperties(
+      [tokenOut],
+      partialRoutingConfig
+    );
 
-    // const feeTakenOnTransfer =
-    //   tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.feeTakenOnTransfer;
-    // const externalTransferFailed =
-    //   tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.externalTransferFailed;
+    const feeTakenOnTransfer =
+      tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.feeTakenOnTransfer;
+    const externalTransferFailed =
+      tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.externalTransferFailed;
 
-    // // We want to log the fee on transfer output tokens that we are taking fee or not
-    // // Ideally the trade size (normalized in USD) would be ideal to log here, but we don't have spot price of output tokens here.
-    // // We have to make sure token out is FOT with either buy/sell fee bps > 0
-    // if (tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.buyFeeBps?.gt(0) ||
-    //     tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.sellFeeBps?.gt(0)) {
-    //   if (feeTakenOnTransfer || externalTransferFailed) {
-    //     // also to be extra safe, in case of FOT with feeTakenOnTransfer or externalTransferFailed,
-    //     // we nullify the fee and flat fee to avoid any potential issues.
-    //     // although neither web nor wallet should use the calldata returned from routing/SOR
-    //     if (swapConfig?.type === SwapType.UNIVERSAL_ROUTER) {
-    //       swapConfig.fee = undefined;
-    //       swapConfig.flatFee = undefined;
-    //     }
+    // We want to log the fee on transfer output tokens that we are taking fee or not
+    // Ideally the trade size (normalized in USD) would be ideal to log here, but we don't have spot price of output tokens here.
+    // We have to make sure token out is FOT with either buy/sell fee bps > 0
+    if (
+      tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.buyFeeBps?.gt(0) ||
+      tokenOutProperties[tokenOut.address.toLowerCase()]?.tokenFeeResult?.sellFeeBps?.gt(0)
+    ) {
+      if (feeTakenOnTransfer || externalTransferFailed) {
+        // also to be extra safe, in case of FOT with feeTakenOnTransfer or externalTransferFailed,
+        // we nullify the fee and flat fee to avoid any potential issues.
+        // although neither web nor wallet should use the calldata returned from routing/SOR
+        if (swapConfig?.type === SwapType.UNIVERSAL_ROUTER) {
+          swapConfig.fee = undefined;
+          swapConfig.flatFee = undefined;
+        }
 
-    //     metric.putMetric(
-    //       'TokenOutFeeOnTransferNotTakingFee',
-    //       1,
-    //       MetricLoggerUnit.Count
-    //     );
-    //   } else {
-    //     metric.putMetric(
-    //       'TokenOutFeeOnTransferTakingFee',
-    //       1,
-    //       MetricLoggerUnit.Count
-    //     );
-    //   }
-    // }
+        metric.putMetric('TokenOutFeeOnTransferNotTakingFee', 1, MetricLoggerUnit.Count);
+      } else {
+        metric.putMetric('TokenOutFeeOnTransferTakingFee', 1, MetricLoggerUnit.Count);
+      }
+    }
 
     if (tradeType === TradeType.EXACT_OUTPUT) {
     }

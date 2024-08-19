@@ -1,7 +1,17 @@
-import { BigNumber } from '@ethersproject/bignumber';
-import { CondensedAddLiquidityOptions, MixedRouteSDK, Protocol, Trade } from '@baseswapfi/router-sdk';
+import { BigNumber, BigNumberish } from '@ethersproject/bignumber';
+import {
+  CondensedAddLiquidityOptions,
+  MixedRouteSDK,
+  Protocol,
+  Trade,
+} from '@baseswapfi/router-sdk';
 import { Currency, Fraction, Percent, Token, TradeType } from '@baseswapfi/sdk-core';
-import { Pool, Position, MethodParameters as SDKMethodParameters, Route as V3RouteRaw } from '@baseswapfi/v3-sdk2';
+import {
+  Pool,
+  Position,
+  MethodParameters as SDKMethodParameters,
+  Route as V3RouteRaw,
+} from '@baseswapfi/v3-sdk2';
 import { SwapOptions as UniversalRouterSwapOptions } from '@baseswapfi/universal-router-sdk';
 import { Route as V2RouteRaw } from '@baseswapfi/v2-sdk';
 
@@ -9,6 +19,11 @@ import { SimulationStatus } from '../providers';
 import { CurrencyAmount } from '../util/amounts';
 
 import { RouteWithValidQuote } from './alpha-router';
+
+export declare type FlatFeeOptions = {
+  amount: BigNumberish;
+  recipient: string;
+};
 
 export class V3Route extends V3RouteRaw<Token, Token> {
   protocol: Protocol.V3 = Protocol.V3;
@@ -136,6 +151,8 @@ export enum SwapType {
 export type SwapOptionsUniversalRouter = UniversalRouterSwapOptions & {
   type: SwapType.UNIVERSAL_ROUTER;
   simulate?: { fromAddress: string };
+  flatFee?: FlatFeeOptions;
+  safeMode?: boolean;
 };
 
 // Swap options for router-sdk and SwapRouter02.
