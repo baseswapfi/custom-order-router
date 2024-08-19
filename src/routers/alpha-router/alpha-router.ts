@@ -2,10 +2,12 @@ import { ChainId, Currency, TradeType } from '@baseswapfi/sdk-core';
 import { ZERO } from '@baseswapfi/router-sdk';
 import { Position } from '@baseswapfi/v3-sdk2';
 
+// import { BigNumber } from '@ethersproject/bignumber';
+import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
+
 import retry from 'async-retry';
 import NodeCache from 'node-cache';
 import _ from 'lodash';
-import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
 
 import { IV3SubgraphProvider } from '../../providers/v3/subgraph-provider';
 import {
@@ -66,7 +68,8 @@ import {
 import { DEFAULT_ROUTING_CONFIG_BY_CHAIN, ETH_GAS_STATION_API_URL } from './config';
 import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
 import { log, metric, MetricLoggerUnit } from '../../util';
-// import { BigNumber } from '@ethersproject/bignumber';
+
+// import { NATIVE_OVERHEAD } from './gas-models/v3/gas-costs';
 
 export type AlphaRouterParams = {
   /**
@@ -267,11 +270,11 @@ export type AlphaRouterConfig = {
   //   * we need this as a pass-through flag to enable/disable this feature.
   //   */
   //  saveTenderlySimulationIfFailed?: boolean;
-  //  /**
-  //   * Include an additional response field specifying the swap gas estimation in terms of a specific gas token.
-  //   * This requires a suitable Native/GasToken pool to exist on V3. If one does not exist this field will return null.
-  //   */
-  //  gasToken?: string;
+  /**
+   * Include an additional response field specifying the swap gas estimation in terms of a specific gas token.
+   * This requires a suitable Native/GasToken pool to exist on V3. If one does not exist this field will return null.
+   */
+  gasToken?: string;
 };
 
 export class MapWithLowerCaseKey<V> extends Map<string, V> {
@@ -400,24 +403,6 @@ export class AlphaRouter
       );
   }
 
-  public async routeToRatio(
-    token0Balance: CurrencyAmount,
-    token1Balance: CurrencyAmount,
-    position: Position,
-    swapAndAddConfig: SwapAndAddConfig,
-    swapAndAddOptions?: SwapAndAddOptions,
-    routingConfig: Partial<AlphaRouterConfig> = DEFAULT_ROUTING_CONFIG_BY_CHAIN(this.chainId)
-  ): Promise<SwapToRatioResponse> {
-    console.log(token0Balance);
-    console.log(token1Balance);
-    console.log(position);
-    console.log(swapAndAddConfig);
-    console.log(swapAndAddOptions);
-    console.log(routingConfig);
-
-    throw new Error('Method not implemented.');
-  }
-
   /**
    * @inheritdoc IRouter
    */
@@ -525,7 +510,33 @@ export class AlphaRouter
     //   await partialRoutingConfig.blockNumber
     // );
 
+    // const quoteToken = quoteCurrency.wrapped;
+    // // const gasTokenAccessor = await this.tokenProvider.getTokens([routingConfig.gasToken!]);
+    // const gasToken = routingConfig.gasToken
+    //   ? (await this.tokenProvider.getTokens([routingConfig.gasToken])).getTokenByAddress(
+    //       routingConfig.gasToken
+    //     )
+    //   : undefined;
+
     return null;
+  }
+
+  public async routeToRatio(
+    token0Balance: CurrencyAmount,
+    token1Balance: CurrencyAmount,
+    position: Position,
+    swapAndAddConfig: SwapAndAddConfig,
+    swapAndAddOptions?: SwapAndAddOptions,
+    routingConfig: Partial<AlphaRouterConfig> = DEFAULT_ROUTING_CONFIG_BY_CHAIN(this.chainId)
+  ): Promise<SwapToRatioResponse> {
+    console.log(token0Balance);
+    console.log(token1Balance);
+    console.log(position);
+    console.log(swapAndAddConfig);
+    console.log(swapAndAddOptions);
+    console.log(routingConfig);
+
+    throw new Error('Method not implemented.');
   }
 
   private determineCurrencyInOutFromTradeType(
