@@ -86,6 +86,12 @@ export type LiquidityCalculationPools = {
   nativeAmountTokenV3Pool: Pool | null;
 };
 
+export type GasModelType = {
+  v2GasModel?: IGasModel<V2RouteWithValidQuote>;
+  v3GasModel: IGasModel<V3RouteWithValidQuote>;
+  mixedRouteGasModel: IGasModel<MixedRouteWithValidQuote>;
+};
+
 /**
  * Contains functions for generating gas estimates for given routes.
  *

@@ -46,6 +46,7 @@ import {
   ETHGasStationInfoProvider,
   ITokenProvider,
   TokenProvider,
+  CachingTokenProviderWithFallback,
   // URISubgraphProvider,
   // V2QuoteProvider,
   // V2SubgraphProviderWithFallBacks,
@@ -53,7 +54,14 @@ import {
 } from '../../providers';
 
 import { GasPrice, IGasPriceProvider } from '../../providers/gas-price-provider';
-
+import {
+  GasModelProviderConfig,
+  GasModelType,
+  IGasModel,
+  IOnChainGasModelFactory,
+  IV2GasModelFactory,
+  LiquidityCalculationPools,
+} from './gas-models/gas-model';
 import { IPortionProvider, PortionProvider } from '../../providers/portion-provider';
 
 import { CurrencyAmount } from '../../util/amounts';
@@ -70,6 +78,7 @@ import {
 import { DEFAULT_ROUTING_CONFIG_BY_CHAIN, ETH_GAS_STATION_API_URL } from './config';
 import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
 import { log, metric, MetricLoggerUnit } from '../../util';
+import { NATIVE_OVERHEAD } from './gas-models/v3/gas-costs';
 
 export type AlphaRouterParams = {
   /**
@@ -356,24 +365,27 @@ export class AlphaRouter
 {
   protected chainId: ChainId;
   protected provider: BaseProvider;
+  protected multicall2Provider: UniswapMulticallProvider;
   protected tokenPropertiesProvider: ITokenPropertiesProvider;
 
-  //  protected tokenProvider: ITokenProvider;
+  // protected tokenProvider: ITokenProvider;
   protected gasPriceProvider: IGasPriceProvider;
 
   protected portionProvider: IPortionProvider;
 
   constructor({
     chainId,
-
     provider,
-    //   tokenProvider,
+    multicall2Provider,
+    // tokenProvider,
     gasPriceProvider,
     tokenPropertiesProvider,
     portionProvider,
   }: AlphaRouterParams) {
     this.chainId = chainId;
     this.provider = provider;
+    this.multicall2Provider =
+      multicall2Provider ?? new UniswapMulticallProvider(chainId, provider, 375_000);
 
     if (tokenPropertiesProvider) {
       this.tokenPropertiesProvider = tokenPropertiesProvider;
@@ -522,13 +534,13 @@ export class AlphaRouter
       log.warn(`Finalized routing config is ${JSON.stringify(routingConfig)}`);
     }
 
-    // const gasPriceWei = await this.getGasPriceWei(
-    //   await blockNumber,
-    //   await partialRoutingConfig.blockNumber
-    // );
+    const gasPriceWei = await this.getGasPriceWei(
+      await blockNumber,
+      await partialRoutingConfig.blockNumber
+    );
 
-    // const quoteToken = quoteCurrency.wrapped;
-    // // const gasTokenAccessor = await this.tokenProvider.getTokens([routingConfig.gasToken!]);
+    const quoteToken = quoteCurrency.wrapped;
+    // const gasTokenAccessor = await this.tokenProvider.getTokens([routingConfig.gasToken!]);
     // const gasToken = routingConfig.gasToken
     //   ? (await this.tokenProvider.getTokens([routingConfig.gasToken])).getTokenByAddress(
     //       routingConfig.gasToken
