@@ -5,7 +5,11 @@ import { Pool } from '@baseswapfi/v3-sdk2';
 import { ProviderConfig } from '../../../providers/provider';
 import { USDC_BASE, USDC_MODE } from '../../../providers/token-provider';
 import { IV2PoolProvider } from '../../../providers/v2/pool-provider';
-import { ArbitrumGasData, IL2GasDataProvider, OptimismGasData } from '../../../providers/v3/gas-data-provider';
+import {
+  ArbitrumGasData,
+  IL2GasDataProvider,
+  OptimismGasData,
+} from '../../../providers/v3/gas-data-provider';
 import { CurrencyAmount } from '../../../util/amounts';
 import {
   MixedRouteWithValidQuote,
@@ -47,6 +51,15 @@ export type L1ToL2GasCosts = {
   gasCostL1QuoteToken: CurrencyAmount;
 };
 
+export type GasModelProviderConfig = ProviderConfig & {
+  /*
+   * Any additional overhead to add to the gas estimate
+   */
+  additionalGasOverhead?: BigNumber;
+
+  gasToken?: Token;
+};
+
 export type BuildOnChainGasModelFactoryType = {
   chainId: ChainId;
   gasPriceWei: BigNumber;
@@ -55,7 +68,7 @@ export type BuildOnChainGasModelFactoryType = {
   quoteToken: Token;
   v2poolProvider: IV2PoolProvider;
   l2GasDataProvider?: IL2GasDataProvider<OptimismGasData> | IL2GasDataProvider<ArbitrumGasData>;
-  providerConfig?: ProviderConfig;
+  providerConfig?: GasModelProviderConfig;
 };
 
 export type BuildV2GasModelFactoryType = {
@@ -63,7 +76,8 @@ export type BuildV2GasModelFactoryType = {
   gasPriceWei: BigNumber;
   poolProvider: IV2PoolProvider;
   token: Token;
-  providerConfig?: ProviderConfig;
+  l2GasDataProvider?: IL2GasDataProvider<ArbitrumGasData>;
+  providerConfig?: GasModelProviderConfig;
 };
 
 export type LiquidityCalculationPools = {
@@ -89,9 +103,7 @@ export type LiquidityCalculationPools = {
  * long running operations.
  */
 export type IGasModel<TRouteWithValidQuote extends RouteWithValidQuote> = {
-  estimateGasCost(
-    routeWithValidQuote: TRouteWithValidQuote
-  ): {
+  estimateGasCost(routeWithValidQuote: TRouteWithValidQuote): {
     gasEstimate: BigNumber;
     gasCostInToken: CurrencyAmount;
     gasCostInUSD: CurrencyAmount;
@@ -139,5 +151,7 @@ export abstract class IOnChainGasModelFactory {
     quoteToken,
     v2poolProvider,
     l2GasDataProvider,
-  }: BuildOnChainGasModelFactoryType): Promise<IGasModel<V3RouteWithValidQuote | MixedRouteWithValidQuote>>;
+  }: BuildOnChainGasModelFactoryType): Promise<
+    IGasModel<V3RouteWithValidQuote | MixedRouteWithValidQuote>
+  >;
 }

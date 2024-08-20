@@ -2,7 +2,7 @@ import { ChainId, Currency, TradeType } from '@baseswapfi/sdk-core';
 import { ZERO } from '@baseswapfi/router-sdk';
 import { Position } from '@baseswapfi/v3-sdk2';
 
-// import { BigNumber } from '@ethersproject/bignumber';
+import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
 
 import retry from 'async-retry';
@@ -44,6 +44,8 @@ import {
   OnChainGasPriceProvider,
   CachingGasStationProvider,
   ETHGasStationInfoProvider,
+  ITokenProvider,
+  TokenProvider,
   // URISubgraphProvider,
   // V2QuoteProvider,
   // V2SubgraphProviderWithFallBacks,
@@ -68,8 +70,6 @@ import {
 import { DEFAULT_ROUTING_CONFIG_BY_CHAIN, ETH_GAS_STATION_API_URL } from './config';
 import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
 import { log, metric, MetricLoggerUnit } from '../../util';
-
-// import { NATIVE_OVERHEAD } from './gas-models/v3/gas-costs';
 
 export type AlphaRouterParams = {
   /**
@@ -114,10 +114,10 @@ export type AlphaRouterParams = {
   //  * The provider for getting V3 quotes.
   //  */
   // v2QuoteProvider?: IV2QuoteProvider;
-  // /**
-  //  * The provider for getting data about Tokens.
-  //  */
-  // tokenProvider?: ITokenProvider;
+  /**
+   * The provider for getting data about Tokens.
+   */
+  tokenProvider?: ITokenProvider;
   /**
    * The provider for getting the current gas price to use when account for gas in the
    * algorithm.
@@ -357,15 +357,19 @@ export class AlphaRouter
   protected chainId: ChainId;
   protected provider: BaseProvider;
   protected tokenPropertiesProvider: ITokenPropertiesProvider;
+
+  //  protected tokenProvider: ITokenProvider;
   protected gasPriceProvider: IGasPriceProvider;
 
   protected portionProvider: IPortionProvider;
 
   constructor({
     chainId,
-    tokenPropertiesProvider,
+
     provider,
+    //   tokenProvider,
     gasPriceProvider,
+    tokenPropertiesProvider,
     portionProvider,
   }: AlphaRouterParams) {
     this.chainId = chainId;
@@ -380,6 +384,19 @@ export class AlphaRouter
         new OnChainTokenFeeFetcher(this.chainId, provider)
       );
     }
+
+    // this.tokenProvider =
+    //   tokenProvider ??
+    //   new CachingTokenProviderWithFallback(
+    //     chainId,
+    //     new NodeJSCache(new NodeCache({ stdTTL: 3600, useClones: false })),
+    //     new CachingTokenListProvider(
+    //       chainId,
+    //       DEFAULT_TOKEN_LIST,
+    //       new NodeJSCache(new NodeCache({ stdTTL: 3600, useClones: false }))
+    //     ),
+    //     new TokenProvider(chainId, this.multicall2Provider)
+    //   );
 
     this.portionProvider = portionProvider ?? new PortionProvider();
 
@@ -518,6 +535,15 @@ export class AlphaRouter
     //     )
     //   : undefined;
 
+    // const providerConfig: GasModelProviderConfig = {
+    //   ...routingConfig,
+    //   blockNumber,
+    //   additionalGasOverhead: NATIVE_OVERHEAD(this.chainId, amount.currency, quoteCurrency),
+    //   gasToken,
+    //   externalTransferFailed,
+    //   feeTakenOnTransfer,
+    // };
+
     return null;
   }
 
@@ -557,27 +583,27 @@ export class AlphaRouter
     }
   }
 
-  // private async getGasPriceWei(
-  //   latestBlockNumber: number,
-  //   requestBlockNumber?: number
-  // ): Promise<BigNumber> {
-  //   // Track how long it takes to resolve this async call.
-  //   const beforeGasTimestamp = Date.now();
+  private async getGasPriceWei(
+    latestBlockNumber: number,
+    requestBlockNumber?: number
+  ): Promise<BigNumber> {
+    // Track how long it takes to resolve this async call.
+    const beforeGasTimestamp = Date.now();
 
-  //   // Get an estimate of the gas price to use when estimating gas cost of different routes.
-  //   const { gasPriceWei } = await this.gasPriceProvider.getGasPrice(
-  //     latestBlockNumber,
-  //     requestBlockNumber
-  //   );
+    // Get an estimate of the gas price to use when estimating gas cost of different routes.
+    const { gasPriceWei } = await this.gasPriceProvider.getGasPrice(
+      latestBlockNumber,
+      requestBlockNumber
+    );
 
-  //   metric.putMetric(
-  //     'GasPriceLoad',
-  //     Date.now() - beforeGasTimestamp,
-  //     MetricLoggerUnit.Milliseconds
-  //   );
+    metric.putMetric(
+      'GasPriceLoad',
+      Date.now() - beforeGasTimestamp,
+      MetricLoggerUnit.Milliseconds
+    );
 
-  //   return gasPriceWei;
-  // }
+    return gasPriceWei;
+  }
 
   private getBlockNumberPromise(): number | Promise<number> {
     return retry(
