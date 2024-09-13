@@ -1,18 +1,22 @@
 import { JsonRpcProvider } from '@ethersproject/providers';
 import { ChainId, TradeType } from '@baseswapfi/sdk-core';
-import { PERMIT2_ADDRESSES } from '@baseswapfi/permit2-sdk';
 import { BigNumber } from 'ethers/lib/ethers';
 
-import { SwapOptions, SwapRoute, SwapType } from '../routers';
+import { GasModelProviderConfig, SwapOptions, SwapRoute, SwapType } from '../routers';
 import { Erc20__factory } from '../types/other/factories/Erc20__factory';
 import { Permit2__factory } from '../types/other/factories/Permit2__factory';
 import { CurrencyAmount, log, SWAP_ROUTER_02_ADDRESSES } from '../util';
 
-import { ProviderConfig } from './provider';
-import { ArbitrumGasData, OptimismGasData } from './v3/gas-data-provider';
+import { PERMIT2_ADDRESSES } from '@baseswapfi/permit2-sdk';
+import { IPortionProvider } from './portion-provider';
 
 export type SimulationResult = {
-  transaction: { hash: string; gas_used: number; gas: number; error_message: string };
+  transaction: {
+    hash: string;
+    gas_used: number;
+    gas: number;
+    error_message: string;
+  };
   simulation: { state_overrides: Record<string, unknown> };
 };
 
@@ -32,13 +36,19 @@ export enum SimulationStatus {
  */
 export abstract class Simulator {
   protected provider: JsonRpcProvider;
+  protected portionProvider: IPortionProvider;
 
   /**
    * Returns a new SwapRoute with simulated gas estimates
    * @returns SwapRoute
    */
-  constructor(provider: JsonRpcProvider, protected chainId: ChainId) {
+  constructor(
+    provider: JsonRpcProvider,
+    portionProvider: IPortionProvider,
+    protected chainId: ChainId
+  ) {
     this.provider = provider;
+    this.portionProvider = portionProvider;
   }
 
   public async simulate(
@@ -47,13 +57,18 @@ export abstract class Simulator {
     swapRoute: SwapRoute,
     amount: CurrencyAmount,
     quote: CurrencyAmount,
-    l2GasData?: OptimismGasData | ArbitrumGasData,
-    providerConfig?: ProviderConfig
+    providerConfig?: GasModelProviderConfig
   ): Promise<SwapRoute> {
-    if (await this.userHasSufficientBalance(fromAddress, swapRoute.trade.tradeType, amount, quote)) {
+    const neededBalance = swapRoute.trade.tradeType == TradeType.EXACT_INPUT ? amount : quote;
+    if (
+      // we assume we always have enough eth mainnet balance because we use beacon address later
+      // @ts-ignore
+      (neededBalance.currency.isNative && this.chainId == 1) ||
+      (await this.userHasSufficientBalance(fromAddress, swapRoute.trade.tradeType, amount, quote))
+    ) {
       log.info('User has sufficient balance to simulate. Simulating transaction.');
       try {
-        return this.simulateTransaction(fromAddress, swapOptions, swapRoute, l2GasData, providerConfig);
+        return this.simulateTransaction(fromAddress, swapOptions, swapRoute, providerConfig);
       } catch (e) {
         log.error({ e }, 'Error simulating transaction');
         return {
@@ -74,8 +89,7 @@ export abstract class Simulator {
     fromAddress: string,
     swapOptions: SwapOptions,
     swapRoute: SwapRoute,
-    l2GasData?: OptimismGasData | ArbitrumGasData,
-    providerConfig?: ProviderConfig
+    providerConfig?: GasModelProviderConfig
   ): Promise<SwapRoute>;
 
   protected async userHasSufficientBalance(
@@ -122,9 +136,10 @@ export abstract class Simulator {
     const tokenContract = Erc20__factory.connect(inputAmount.currency.wrapped.address, provider);
 
     if (swapOptions.type == SwapType.UNIVERSAL_ROUTER) {
-      const chainId = provider.network.chainId as ChainId;
-      const permitAddress = PERMIT2_ADDRESSES[chainId] || '';
-      const permit2Allowance = await tokenContract.allowance(fromAddress, permitAddress);
+      const permit2Allowance = await tokenContract.allowance(
+        fromAddress,
+        PERMIT2_ADDRESSES[this.chainId] || ''
+      );
 
       // If a permit has been provided we don't need to check if UR has already been allowed.
       if (swapOptions.inputTokenPermit) {
@@ -139,13 +154,17 @@ export abstract class Simulator {
       }
 
       // Check UR has been approved from Permit2.
-      const permit2Contract = Permit2__factory.connect(permitAddress, provider);
-
-      const { amount: universalRouterAllowance, expiration: tokenExpiration } = await permit2Contract.allowance(
-        fromAddress,
-        inputAmount.currency.wrapped.address,
-        SWAP_ROUTER_02_ADDRESSES(this.chainId)
+      const permit2Contract = Permit2__factory.connect(
+        PERMIT2_ADDRESSES[this.chainId] || '',
+        provider
       );
+
+      const { amount: universalRouterAllowance, expiration: tokenExpiration } =
+        await permit2Contract.allowance(
+          fromAddress,
+          inputAmount.currency.wrapped.address,
+          SWAP_ROUTER_02_ADDRESSES(this.chainId)
+        );
 
       const nowTimestampS = Math.round(Date.now() / 1000);
       const inputAmountBN = BigNumber.from(inputAmount.quotient.toString());
@@ -178,7 +197,10 @@ export abstract class Simulator {
         return true;
       }
 
-      const allowance = await tokenContract.allowance(fromAddress, SWAP_ROUTER_02_ADDRESSES(this.chainId));
+      const allowance = await tokenContract.allowance(
+        fromAddress,
+        SWAP_ROUTER_02_ADDRESSES(this.chainId)
+      );
       const hasAllowance = allowance.gte(BigNumber.from(inputAmount.quotient.toString()));
       log.info(
         {
