@@ -1,7 +1,7 @@
 export * from './cache';
 export * from './cache-node';
 export * from './caching-gas-provider';
-// export * from './caching-token-list-provider';
+export * from './caching-token-list-provider';
 export * from './caching-token-provider';
 export * from './eip-1559-gas-price-provider';
 // export * from './eth-estimate-gas-provider';
@@ -20,7 +20,7 @@ export * from './token-provider';
 export * from './token-validator-provider';
 // export * from './uri-subgraph-provider';
 export * from './caching/route';
-// export * from './v2/caching-pool-provider';
+export * from './v2/caching-pool-provider';
 // export * from './v2/caching-subgraph-provider';
 export * from './v2/pool-provider';
 // export * from './v2/quote-provider';

@@ -1,5 +1,5 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Token } from '@baseswapfi/sdk-core';
+import { ChainId, CurrencyAmount as CurrencyAmountRaw, Token } from '@baseswapfi/sdk-core';
 import { Pool } from '@baseswapfi/v3-sdk2';
 
 import { ProviderConfig } from '../../../providers/provider';
@@ -17,6 +17,8 @@ import {
   V2RouteWithValidQuote,
   V3RouteWithValidQuote,
 } from '../entities/route-with-valid-quote';
+import { WRAPPED_NATIVE_CURRENCY } from '../../../util';
+import { Pair } from '@baseswapfi/v2-sdk';
 
 // When adding new usd gas tokens, ensure the tokens are ordered
 // from tokens with highest decimals to lowest decimals. For example,
@@ -67,7 +69,7 @@ export type BuildOnChainGasModelFactoryType = {
   amountToken: Token;
   quoteToken: Token;
   v2poolProvider: IV2PoolProvider;
-  l2GasDataProvider?: IL2GasDataProvider<OptimismGasData> | IL2GasDataProvider<ArbitrumGasData>;
+  l2GasDataProvider?: IL2GasDataProvider<ArbitrumGasData>;
   providerConfig?: GasModelProviderConfig;
 };
 
@@ -82,8 +84,9 @@ export type BuildV2GasModelFactoryType = {
 
 export type LiquidityCalculationPools = {
   usdPool: Pool;
-  nativeQuoteTokenV3Pool: Pool | null;
-  nativeAmountTokenV3Pool: Pool | null;
+  nativeAndQuoteTokenV3Pool: Pool | null;
+  nativeAndAmountTokenV3Pool: Pool | null;
+  nativeAndSpecifiedGasTokenV3Pool: Pool | null;
 };
 
 export type GasModelType = {
@@ -148,7 +151,7 @@ export abstract class IV2GasModelFactory {
  * @abstract
  * @class IOnChainGasModelFactory
  */
-export abstract class IOnChainGasModelFactory {
+export abstract class IOnChainGasModelFactory<TRouteWithValidQuote extends RouteWithValidQuote> {
   public abstract buildGasModel({
     chainId,
     gasPriceWei,
@@ -157,7 +160,36 @@ export abstract class IOnChainGasModelFactory {
     quoteToken,
     v2poolProvider,
     l2GasDataProvider,
-  }: BuildOnChainGasModelFactoryType): Promise<
-    IGasModel<V3RouteWithValidQuote | MixedRouteWithValidQuote>
-  >;
+    providerConfig,
+  }: BuildOnChainGasModelFactoryType): Promise<IGasModel<TRouteWithValidQuote>>;
+
+  protected totalInitializedTicksCrossed(initializedTicksCrossedList: number[]) {
+    let ticksCrossed = 0;
+    for (let i = 0; i < initializedTicksCrossedList.length; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      if (initializedTicksCrossedList[i]! > 0) {
+        // Quoter returns Array<number of calls to crossTick + 1>, so we need to subtract 1 here.
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        ticksCrossed += initializedTicksCrossedList[i]! - 1;
+      }
+    }
+
+    return ticksCrossed;
+  }
 }
+
+// Determines if native currency is token0
+// Gets the native price of the pool, dependent on 0 or 1
+// quotes across the pool
+export const getQuoteThroughNativePool = (
+  chainId: ChainId,
+  nativeTokenAmount: CurrencyAmountRaw<Token>,
+  nativeTokenPool: Pool | Pair
+): CurrencyAmount => {
+  const nativeCurrency = WRAPPED_NATIVE_CURRENCY[chainId];
+  const isToken0 = nativeTokenPool.token0.equals(nativeCurrency);
+  // returns mid price in terms of the native currency (the ratio of token/nativeToken)
+  const nativeTokenPrice = isToken0 ? nativeTokenPool.token0Price : nativeTokenPool.token1Price;
+  // return gas cost in terms of the non native currency
+  return nativeTokenPrice.quote(nativeTokenAmount) as CurrencyAmount;
+};

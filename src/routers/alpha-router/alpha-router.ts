@@ -1,13 +1,18 @@
-import { ChainId, Currency, TradeType } from '@baseswapfi/sdk-core';
+import { ChainId, Currency, Token, TradeType } from '@baseswapfi/sdk-core';
 import { ZERO } from '@baseswapfi/router-sdk';
 import { Position } from '@baseswapfi/v3-sdk2';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
-
+import DEFAULT_TOKEN_LIST from '@baseswapfi/default-token-list';
 import retry from 'async-retry';
 import NodeCache from 'node-cache';
 import _ from 'lodash';
+
+import {
+  getHighestLiquidityV3NativePool,
+  getHighestLiquidityV3USDPool,
+} from '../../util/gas-factory-helpers';
 
 import { IV3SubgraphProvider } from '../../providers/v3/subgraph-provider';
 import {
@@ -51,6 +56,10 @@ import {
   V3PoolProvider,
   IOnChainQuoteProvider,
   OnChainQuoteProvider,
+  CachingTokenListProvider,
+  IV2PoolProvider,
+  V2PoolProvider,
+  CachingV2PoolProvider,
   // URISubgraphProvider,
   // V2QuoteProvider,
   // V2SubgraphProviderWithFallBacks,
@@ -66,6 +75,9 @@ import {
   IV2GasModelFactory,
   LiquidityCalculationPools,
 } from './gas-models/gas-model';
+import { MixedRouteHeuristicGasModelFactory } from './gas-models/mixedRoute/mixed-route-heuristic-gas-model';
+import { V2HeuristicGasModelFactory } from './gas-models/v2/v2-heuristic-gas-model';
+import { V3HeuristicGasModelFactory } from './gas-models/v3/v3-heuristic-gas-model';
 import { IPortionProvider, PortionProvider } from '../../providers/portion-provider';
 
 import { CurrencyAmount } from '../../util/amounts';
@@ -81,8 +93,15 @@ import {
 } from '../router';
 import { DEFAULT_ROUTING_CONFIG_BY_CHAIN, ETH_GAS_STATION_API_URL } from './config';
 import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
-import { ID_TO_CHAIN_ID, log, metric, MetricLoggerUnit } from '../../util';
-import { NATIVE_OVERHEAD } from './gas-models/v3/gas-costs';
+import {
+  ID_TO_CHAIN_ID,
+  log,
+  metric,
+  MetricLoggerUnit,
+  V2_SUPPORTED,
+  WRAPPED_NATIVE_CURRENCY,
+} from '../../util';
+import { NATIVE_OVERHEAD } from './gas-models/gas-costs';
 import {
   DEFAULT_RETRY_OPTIONS,
   DEFAULT_BATCH_PARAMS,
@@ -90,6 +109,17 @@ import {
   DEFAULT_SUCCESS_RATE_FAILURE_OVERRIDES,
   DEFAULT_BLOCK_NUMBER_CONFIGS,
 } from '../../util/onchainQuoteProviderConfigs';
+import {
+  IL2GasDataProvider,
+  ArbitrumGasData,
+  ArbitrumGasDataProvider,
+} from '../../providers/v3/gas-data-provider';
+import {
+  MixedRouteWithValidQuote,
+  RouteWithValidQuote,
+  V2RouteWithValidQuote,
+  V3RouteWithValidQuote,
+} from './entities/route-with-valid-quote';
 
 export type AlphaRouterParams = {
   /**
@@ -126,10 +156,10 @@ export type AlphaRouterParams = {
   //  * from this provider are filtered during the algorithm to a set of candidate pools.
   //  */
   // v2SubgraphProvider?: IV2SubgraphProvider;
-  // /**
-  //  * The provider for getting data about V2 pools.
-  //  */
-  // v2PoolProvider?: IV2PoolProvider;
+  /**
+   * The provider for getting data about V2 pools.
+   */
+  v2PoolProvider?: IV2PoolProvider;
   // /**
   //  * The provider for getting V3 quotes.
   //  */
@@ -143,21 +173,21 @@ export type AlphaRouterParams = {
    * algorithm.
    */
   gasPriceProvider?: IGasPriceProvider;
-  // /**
-  //  * A factory for generating a gas model that is used when estimating the gas used by
-  //  * V3 routes.
-  //  */
-  // v3GasModelFactory?: IOnChainGasModelFactory;
-  // /**
-  //  * A factory for generating a gas model that is used when estimating the gas used by
-  //  * V2 routes.
-  //  */
-  // v2GasModelFactory?: IV2GasModelFactory;
-  // /**
-  //  * A factory for generating a gas model that is used when estimating the gas used by
-  //  * V3 routes.
-  //  */
-  // mixedRouteGasModelFactory?: IOnChainGasModelFactory;
+  /**
+   * A factory for generating a gas model that is used when estimating the gas used by
+   * V3 routes.
+   */
+  v3GasModelFactory?: IOnChainGasModelFactory<V3RouteWithValidQuote>;
+  /**
+   * A factory for generating a gas model that is used when estimating the gas used by
+   * V2 routes.
+   */
+  v2GasModelFactory?: IV2GasModelFactory;
+  /**
+   * A factory for generating a gas model that is used when estimating the gas used by
+   * V3 routes.
+   */
+  mixedRouteGasModelFactory?: IOnChainGasModelFactory<MixedRouteWithValidQuote>;
   // /**
   //  * A token list that specifies Token that should be blocked from routing through.
   //  * Defaults to Uniswap's unsupported token list.
@@ -175,10 +205,10 @@ export type AlphaRouterParams = {
   //  */
   // tokenValidatorProvider?: ITokenValidatorProvider;
 
-  // /**
-  //  * Calls the arbitrum gas data contract to fetch constants for calculating the l1 fee.
-  //  */
-  // arbitrumGasDataProvider?: IL2GasDataProvider<ArbitrumGasData>;
+  /**
+   * Calls the arbitrum gas data contract to fetch constants for calculating the l1 fee.
+   */
+  arbitrumGasDataProvider?: IL2GasDataProvider<ArbitrumGasData>;
 
   // /**
   //  * Simulates swaps and returns new SwapRoute with updated gas estimates.
@@ -200,10 +230,10 @@ export type AlphaRouterParams = {
    */
   portionProvider?: IPortionProvider;
 
-  // /**
-  //  * All the supported v2 chains configuration
-  //  */
-  // v2Supported?: ChainId[];
+  /**
+   * All the supported v2 chains configuration
+   */
+  v2Supported?: ChainId[];
 };
 
 export type AlphaRouterConfig = {
@@ -379,27 +409,36 @@ export class AlphaRouter
   protected multicall2Provider: UniswapMulticallProvider;
   // protected v3SubgraphProvider: IV3SubgraphProvider;
   protected v3PoolProvider: IV3PoolProvider;
+  protected v2PoolProvider: IV2PoolProvider;
   protected onChainQuoteProvider: IOnChainQuoteProvider;
+  protected tokenProvider: ITokenProvider;
   protected routeCachingProvider?: IRouteCachingProvider;
-
+  protected l2GasDataProvider?: IL2GasDataProvider<ArbitrumGasData>;
+  protected mixedRouteGasModelFactory: IOnChainGasModelFactory<MixedRouteWithValidQuote>;
+  protected v3GasModelFactory: IOnChainGasModelFactory<V3RouteWithValidQuote>;
+  protected v2GasModelFactory: IV2GasModelFactory;
   protected tokenPropertiesProvider: ITokenPropertiesProvider;
-
-  // protected tokenProvider: ITokenProvider;
   protected gasPriceProvider: IGasPriceProvider;
-
   protected portionProvider: IPortionProvider;
+  protected v2Supported?: ChainId[];
 
   constructor({
     chainId,
     provider,
     multicall2Provider,
-    // tokenProvider,
+    tokenProvider,
     gasPriceProvider,
+    v3GasModelFactory,
+    v2GasModelFactory,
+    mixedRouteGasModelFactory,
     tokenPropertiesProvider,
     portionProvider,
     v3PoolProvider,
     routeCachingProvider,
     onChainQuoteProvider,
+    v2Supported,
+    v2PoolProvider,
+    arbitrumGasDataProvider,
   }: AlphaRouterParams) {
     this.chainId = chainId;
     this.provider = provider;
@@ -627,6 +666,26 @@ export class AlphaRouter
       );
     }
 
+    this.v2PoolProvider =
+      v2PoolProvider ??
+      new CachingV2PoolProvider(
+        chainId,
+        new V2PoolProvider(chainId, this.multicall2Provider, this.tokenPropertiesProvider),
+        new NodeJSCache(new NodeCache({ stdTTL: 60, useClones: false }))
+      );
+
+    this.tokenProvider =
+      tokenProvider ??
+      new CachingTokenProviderWithFallback(
+        chainId,
+        new NodeJSCache(new NodeCache({ stdTTL: 3600, useClones: false })),
+        new CachingTokenListProvider(
+          chainId,
+          DEFAULT_TOKEN_LIST,
+          new NodeJSCache(new NodeCache({ stdTTL: 3600, useClones: false }))
+        ),
+        new TokenProvider(chainId, this.multicall2Provider)
+      );
     this.portionProvider = portionProvider ?? new PortionProvider();
 
     let gasPriceProviderInstance: IGasPriceProvider;
@@ -647,6 +706,18 @@ export class AlphaRouter
         gasPriceProviderInstance,
         new NodeJSCache<GasPrice>(new NodeCache({ stdTTL: 7, useClones: false }))
       );
+
+    this.v2GasModelFactory = v2GasModelFactory ?? new V2HeuristicGasModelFactory(this.provider);
+    this.v3GasModelFactory = v3GasModelFactory ?? new V3HeuristicGasModelFactory(this.provider);
+    this.mixedRouteGasModelFactory =
+      mixedRouteGasModelFactory ?? new MixedRouteHeuristicGasModelFactory();
+
+    if (chainId === ChainId.ARBITRUM) {
+      this.l2GasDataProvider =
+        arbitrumGasDataProvider ?? new ArbitrumGasDataProvider(chainId, this.provider);
+    }
+
+    this.v2Supported = v2Supported ?? V2_SUPPORTED;
   }
 
   /**
@@ -758,20 +829,25 @@ export class AlphaRouter
 
     const quoteToken = quoteCurrency.wrapped;
     // const gasTokenAccessor = await this.tokenProvider.getTokens([routingConfig.gasToken!]);
-    // const gasToken = routingConfig.gasToken
-    //   ? (await this.tokenProvider.getTokens([routingConfig.gasToken])).getTokenByAddress(
-    //       routingConfig.gasToken
-    //     )
-    //   : undefined;
+    const gasToken = routingConfig.gasToken
+      ? (await this.tokenProvider.getTokens([routingConfig.gasToken])).getTokenByAddress(
+          routingConfig.gasToken
+        )
+      : undefined;
 
-    // const providerConfig: GasModelProviderConfig = {
-    //   ...routingConfig,
-    //   blockNumber,
-    //   additionalGasOverhead: NATIVE_OVERHEAD(this.chainId, amount.currency, quoteCurrency),
-    //   gasToken,
-    //   externalTransferFailed,
-    //   feeTakenOnTransfer,
-    // };
+    const providerConfig: GasModelProviderConfig = {
+      ...routingConfig,
+      blockNumber,
+      additionalGasOverhead: NATIVE_OVERHEAD(this.chainId, amount.currency, quoteCurrency),
+      gasToken,
+      externalTransferFailed,
+      feeTakenOnTransfer,
+    };
+    const {
+      v2GasModel: v2GasModel,
+      v3GasModel: v3GasModel,
+      mixedRouteGasModel: mixedRouteGasModel,
+    } = await this.getGasModels(gasPriceWei, amount.currency.wrapped, quoteToken, providerConfig);
 
     return null;
   }
@@ -832,6 +908,110 @@ export class AlphaRouter
     );
 
     return gasPriceWei;
+  }
+
+  private async getGasModels(
+    gasPriceWei: BigNumber,
+    amountToken: Token,
+    quoteToken: Token,
+    providerConfig?: GasModelProviderConfig
+  ): Promise<GasModelType> {
+    const beforeGasModel = Date.now();
+
+    const usdPoolPromise = getHighestLiquidityV3USDPool(
+      this.chainId,
+      this.v3PoolProvider,
+      providerConfig
+    );
+    const nativeCurrency = WRAPPED_NATIVE_CURRENCY[this.chainId];
+    const nativeAndQuoteTokenV3PoolPromise = !quoteToken.equals(nativeCurrency)
+      ? getHighestLiquidityV3NativePool(quoteToken, this.v3PoolProvider, providerConfig)
+      : Promise.resolve(null);
+    const nativeAndAmountTokenV3PoolPromise = !amountToken.equals(nativeCurrency)
+      ? getHighestLiquidityV3NativePool(amountToken, this.v3PoolProvider, providerConfig)
+      : Promise.resolve(null);
+
+    // If a specific gas token is specified in the provider config
+    // fetch the highest liq V3 pool with it and the native currency
+    const nativeAndSpecifiedGasTokenV3PoolPromise =
+      providerConfig?.gasToken && !providerConfig?.gasToken.equals(nativeCurrency)
+        ? getHighestLiquidityV3NativePool(
+            providerConfig?.gasToken,
+            this.v3PoolProvider,
+            providerConfig
+          )
+        : Promise.resolve(null);
+
+    const [
+      usdPool,
+      nativeAndQuoteTokenV3Pool,
+      nativeAndAmountTokenV3Pool,
+      nativeAndSpecifiedGasTokenV3Pool,
+    ] = await Promise.all([
+      usdPoolPromise,
+      nativeAndQuoteTokenV3PoolPromise,
+      nativeAndAmountTokenV3PoolPromise,
+      nativeAndSpecifiedGasTokenV3PoolPromise,
+    ]);
+
+    const pools: LiquidityCalculationPools = {
+      usdPool: usdPool,
+      nativeAndQuoteTokenV3Pool: nativeAndQuoteTokenV3Pool,
+      nativeAndAmountTokenV3Pool: nativeAndAmountTokenV3Pool,
+      nativeAndSpecifiedGasTokenV3Pool: nativeAndSpecifiedGasTokenV3Pool,
+    };
+
+    const v2GasModelPromise = this.v2Supported?.includes(this.chainId)
+      ? this.v2GasModelFactory
+          .buildGasModel({
+            chainId: this.chainId,
+            gasPriceWei,
+            poolProvider: this.v2PoolProvider,
+            token: quoteToken,
+            l2GasDataProvider: this.l2GasDataProvider,
+            providerConfig: providerConfig,
+          })
+          .catch((_) => undefined) // If v2 model throws uncaught exception, we return undefined v2 gas model, so there's a chance v3 route can go through
+      : Promise.resolve(undefined);
+
+    const v3GasModelPromise = this.v3GasModelFactory.buildGasModel({
+      chainId: this.chainId,
+      gasPriceWei,
+      pools,
+      amountToken,
+      quoteToken,
+      v2poolProvider: this.v2PoolProvider,
+      l2GasDataProvider: this.l2GasDataProvider,
+      providerConfig: providerConfig,
+    });
+
+    const mixedRouteGasModelPromise = this.mixedRouteGasModelFactory.buildGasModel({
+      chainId: this.chainId,
+      gasPriceWei,
+      pools,
+      amountToken,
+      quoteToken,
+      v2poolProvider: this.v2PoolProvider,
+      providerConfig: providerConfig,
+    });
+
+    const [v2GasModel, v3GasModel, mixedRouteGasModel] = await Promise.all([
+      v2GasModelPromise,
+      v3GasModelPromise,
+      mixedRouteGasModelPromise,
+    ]);
+
+    metric.putMetric(
+      'GasModelCreation',
+      Date.now() - beforeGasModel,
+      MetricLoggerUnit.Milliseconds
+    );
+
+    return {
+      v2GasModel: v2GasModel,
+      v3GasModel: v3GasModel,
+      mixedRouteGasModel: mixedRouteGasModel,
+    } as GasModelType;
   }
 
   private getBlockNumberPromise(): number | Promise<number> {

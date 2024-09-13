@@ -6,6 +6,7 @@ import { GasDataArbitrum__factory } from '../../types/other/factories/GasDataArb
 import { GasPriceOracle__factory } from '../../types/other/factories/GasPriceOracle__factory';
 import { ARB_GASINFO_ADDRESS, log, OVM_GASPRICE_ADDRESS } from '../../util';
 import { IMulticallProvider } from '../multicall-provider';
+import { ProviderConfig } from '../provider';
 
 /**
  * Provider for getting gas constants on L2s.
@@ -18,7 +19,7 @@ export interface IL2GasDataProvider<T> {
    * Gets the data constants needed to calculate the l1 security fee on L2s like arbitrum and optimism.
    * @returns An object that includes the data necessary for the off chain estimations.
    */
-  getGasData(): Promise<T>;
+  getGasData(providerConfig?: ProviderConfig): Promise<T>;
 }
 
 export type OptimismGasData = {
@@ -31,7 +32,11 @@ export type OptimismGasData = {
 export class OptimismGasDataProvider implements IL2GasDataProvider<OptimismGasData> {
   protected gasOracleAddress: string;
 
-  constructor(protected chainId: ChainId, protected multicall2Provider: IMulticallProvider, gasPriceAddress?: string) {
+  constructor(
+    protected chainId: ChainId,
+    protected multicall2Provider: IMulticallProvider,
+    gasPriceAddress?: string
+  ) {
     if (chainId !== ChainId.BASE && chainId !== ChainId.MODE) {
       throw new Error('This data provider is used only on optimism networks.');
     }
@@ -45,14 +50,25 @@ export class OptimismGasDataProvider implements IL2GasDataProvider<OptimismGasDa
    */
   public async getGasData(): Promise<OptimismGasData> {
     const funcNames = ['l1BaseFee', 'scalar', 'decimals', 'overhead'];
-    const tx = await this.multicall2Provider.callMultipleFunctionsOnSameContract<undefined, [BigNumber]>({
+    const tx = await this.multicall2Provider.callMultipleFunctionsOnSameContract<
+      undefined,
+      [BigNumber]
+    >({
       address: this.gasOracleAddress,
       contractInterface: GasPriceOracle__factory.createInterface(),
       functionNames: funcNames,
     });
 
-    if (!tx.results[0]?.success || !tx.results[1]?.success || !tx.results[2]?.success || !tx.results[3]?.success) {
-      log.info({ results: tx.results }, 'Failed to get gas constants data from the optimism gas oracle');
+    if (
+      !tx.results[0]?.success ||
+      !tx.results[1]?.success ||
+      !tx.results[2]?.success ||
+      !tx.results[3]?.success
+    ) {
+      log.info(
+        { results: tx.results },
+        'Failed to get gas constants data from the optimism gas oracle'
+      );
       throw new Error('Failed to get gas constants data from the optimism gas oracle');
     }
 
@@ -85,7 +101,11 @@ export class ArbitrumGasDataProvider implements IL2GasDataProvider<ArbitrumGasDa
   protected gasFeesAddress: string;
   protected blockNumberOverride: number | Promise<number> | undefined;
 
-  constructor(protected chainId: ChainId, protected provider: BaseProvider, gasDataAddress?: string) {
+  constructor(
+    protected chainId: ChainId,
+    protected provider: BaseProvider,
+    gasDataAddress?: string
+  ) {
     this.gasFeesAddress = gasDataAddress ? gasDataAddress : ARB_GASINFO_ADDRESS;
   }
 

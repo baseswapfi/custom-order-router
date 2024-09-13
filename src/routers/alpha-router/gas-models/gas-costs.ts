@@ -1,7 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { ChainId, Currency, Token } from '@baseswapfi/sdk-core';
 
-import { V3Route } from '../../../router';
+import { V3Route } from '../../router';
 
 // Cost for crossing an uninitialized tick.
 export const COST_PER_UNINIT_TICK = BigNumber.from(0);
