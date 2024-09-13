@@ -23,7 +23,7 @@ import {
   // EIP1559GasPriceProvider,
   // ETHGasStationInfoProvider,
   // IOnChainQuoteProvider,
-  // IRouteCachingProvider,
+  IRouteCachingProvider,
   // ISwapRouterProvider,
   ITokenPropertiesProvider,
   // IV2QuoteProvider,
@@ -47,6 +47,10 @@ import {
   ITokenProvider,
   TokenProvider,
   CachingTokenProviderWithFallback,
+  CachingV3PoolProvider,
+  V3PoolProvider,
+  IOnChainQuoteProvider,
+  OnChainQuoteProvider,
   // URISubgraphProvider,
   // V2QuoteProvider,
   // V2SubgraphProviderWithFallBacks,
@@ -77,8 +81,15 @@ import {
 } from '../router';
 import { DEFAULT_ROUTING_CONFIG_BY_CHAIN, ETH_GAS_STATION_API_URL } from './config';
 import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
-import { log, metric, MetricLoggerUnit } from '../../util';
+import { ID_TO_CHAIN_ID, log, metric, MetricLoggerUnit } from '../../util';
 import { NATIVE_OVERHEAD } from './gas-models/v3/gas-costs';
+import {
+  DEFAULT_RETRY_OPTIONS,
+  DEFAULT_BATCH_PARAMS,
+  DEFAULT_GAS_ERROR_FAILURE_OVERRIDES,
+  DEFAULT_SUCCESS_RATE_FAILURE_OVERRIDES,
+  DEFAULT_BLOCK_NUMBER_CONFIGS,
+} from '../../util/onchainQuoteProviderConfigs';
 
 export type AlphaRouterParams = {
   /**
@@ -106,10 +117,10 @@ export type AlphaRouterParams = {
    * The provider for getting data about V3 pools.
    */
   v3PoolProvider?: IV3PoolProvider;
-  // /**
-  //  * The provider for getting V3 quotes.
-  //  */
-  // onChainQuoteProvider?: IOnChainQuoteProvider;
+  /**
+   * The provider for getting V3 quotes.
+   */
+  onChainQuoteProvider?: IOnChainQuoteProvider;
   // /**
   //  * The provider for getting all pools that exist on V2 from the Subgraph. The pools
   //  * from this provider are filtered during the algorithm to a set of candidate pools.
@@ -174,10 +185,10 @@ export type AlphaRouterParams = {
   //  */
   // simulator?: Simulator;
 
-  // /**
-  //  * A provider for caching the best route given an amount, quoteToken, tradeType
-  //  */
-  // routeCachingProvider?: IRouteCachingProvider;
+  /**
+   * A provider for caching the best route given an amount, quoteToken, tradeType
+   */
+  routeCachingProvider?: IRouteCachingProvider;
 
   /**
    * A provider for getting token properties for special tokens like fee-on-transfer tokens.
@@ -366,6 +377,11 @@ export class AlphaRouter
   protected chainId: ChainId;
   protected provider: BaseProvider;
   protected multicall2Provider: UniswapMulticallProvider;
+  // protected v3SubgraphProvider: IV3SubgraphProvider;
+  protected v3PoolProvider: IV3PoolProvider;
+  protected onChainQuoteProvider: IOnChainQuoteProvider;
+  protected routeCachingProvider?: IRouteCachingProvider;
+
   protected tokenPropertiesProvider: ITokenPropertiesProvider;
 
   // protected tokenProvider: ITokenProvider;
@@ -381,11 +397,225 @@ export class AlphaRouter
     gasPriceProvider,
     tokenPropertiesProvider,
     portionProvider,
+    v3PoolProvider,
+    routeCachingProvider,
+    onChainQuoteProvider,
   }: AlphaRouterParams) {
     this.chainId = chainId;
     this.provider = provider;
     this.multicall2Provider =
       multicall2Provider ?? new UniswapMulticallProvider(chainId, provider, 375_000);
+
+    this.v3PoolProvider =
+      v3PoolProvider ??
+      new CachingV3PoolProvider(
+        this.chainId,
+        new V3PoolProvider(ID_TO_CHAIN_ID(chainId), this.multicall2Provider),
+        new NodeJSCache(new NodeCache({ stdTTL: 360, useClones: false }))
+      );
+    // this.simulator = simulator;
+    this.routeCachingProvider = routeCachingProvider;
+
+    if (onChainQuoteProvider) {
+      this.onChainQuoteProvider = onChainQuoteProvider;
+    } else {
+      switch (chainId) {
+        case ChainId.OPTIMISM:
+          // case ChainId.OPTIMISM_GOERLI:
+          // case ChainId.OPTIMISM_SEPOLIA:
+          this.onChainQuoteProvider = new OnChainQuoteProvider(
+            chainId,
+            provider,
+            this.multicall2Provider,
+            {
+              retries: 2,
+              minTimeout: 100,
+              maxTimeout: 1000,
+            },
+            (_) => {
+              return {
+                multicallChunk: 110,
+                gasLimitPerCall: 1_200_000,
+                quoteMinSuccessRate: 0.1,
+              };
+            },
+            {
+              gasLimitOverride: 3_000_000,
+              multicallChunk: 45,
+            },
+            {
+              gasLimitOverride: 3_000_000,
+              multicallChunk: 45,
+            },
+            {
+              baseBlockOffset: -10,
+              rollback: {
+                enabled: true,
+                attemptsBeforeRollback: 1,
+                rollbackBlockOffset: -10,
+              },
+            }
+          );
+          break;
+        case ChainId.BASE:
+        // case ChainId.BLAST:
+        // case ChainId.ZORA:
+        case ChainId.BASE_GOERLI:
+          this.onChainQuoteProvider = new OnChainQuoteProvider(
+            chainId,
+            provider,
+            this.multicall2Provider,
+            {
+              retries: 2,
+              minTimeout: 100,
+              maxTimeout: 1000,
+            },
+            (_) => {
+              return {
+                multicallChunk: 80,
+                gasLimitPerCall: 1_200_000,
+                quoteMinSuccessRate: 0.1,
+              };
+            },
+            {
+              gasLimitOverride: 3_000_000,
+              multicallChunk: 45,
+            },
+            {
+              gasLimitOverride: 3_000_000,
+              multicallChunk: 45,
+            },
+            {
+              baseBlockOffset: -10,
+              rollback: {
+                enabled: true,
+                attemptsBeforeRollback: 1,
+                rollbackBlockOffset: -10,
+              },
+            }
+          );
+          break;
+        // case ChainId.ZKSYNC:
+        //   this.onChainQuoteProvider = new OnChainQuoteProvider(
+        //     chainId,
+        //     provider,
+        //     this.multicall2Provider,
+        //     {
+        //       retries: 2,
+        //       minTimeout: 100,
+        //       maxTimeout: 1000,
+        //     },
+        //     (_) => {
+        //       return {
+        //         multicallChunk: 27,
+        //         gasLimitPerCall: 3_000_000,
+        //         quoteMinSuccessRate: 0.1,
+        //       };
+        //     },
+        //     {
+        //       gasLimitOverride: 6_000_000,
+        //       multicallChunk: 13,
+        //     },
+        //     {
+        //       gasLimitOverride: 6_000_000,
+        //       multicallChunk: 13,
+        //     },
+        //     {
+        //       baseBlockOffset: -10,
+        //       rollback: {
+        //         enabled: true,
+        //         attemptsBeforeRollback: 1,
+        //         rollbackBlockOffset: -10,
+        //       },
+        //     }
+        //   );
+        //   break;
+        case ChainId.ARBITRUM:
+          // case ChainId.ARBITRUM_GOERLI:
+          // case ChainId.ARBITRUM_SEPOLIA:
+          this.onChainQuoteProvider = new OnChainQuoteProvider(
+            chainId,
+            provider,
+            this.multicall2Provider,
+            {
+              retries: 2,
+              minTimeout: 100,
+              maxTimeout: 1000,
+            },
+            (_) => {
+              return {
+                multicallChunk: 10,
+                gasLimitPerCall: 12_000_000,
+                quoteMinSuccessRate: 0.1,
+              };
+            },
+            {
+              gasLimitOverride: 30_000_000,
+              multicallChunk: 6,
+            },
+            {
+              gasLimitOverride: 30_000_000,
+              multicallChunk: 6,
+            }
+          );
+          break;
+        // case ChainId.CELO:
+        // case ChainId.CELO_ALFAJORES:
+        //   this.onChainQuoteProvider = new OnChainQuoteProvider(
+        //     chainId,
+        //     provider,
+        //     this.multicall2Provider,
+        //     {
+        //       retries: 2,
+        //       minTimeout: 100,
+        //       maxTimeout: 1000,
+        //     },
+        //     (_) => {
+        //       return {
+        //         multicallChunk: 10,
+        //         gasLimitPerCall: 5_000_000,
+        //         quoteMinSuccessRate: 0.1,
+        //       };
+        //     },
+        //     {
+        //       gasLimitOverride: 5_000_000,
+        //       multicallChunk: 5,
+        //     },
+        //     {
+        //       gasLimitOverride: 6_250_000,
+        //       multicallChunk: 4,
+        //     }
+        //   );
+        //   break;
+        // case ChainId.POLYGON_MUMBAI:
+        // case ChainId.SEPOLIA:
+        // case ChainId.MAINNET:
+        // case ChainId.POLYGON:
+        //   this.onChainQuoteProvider = new OnChainQuoteProvider(
+        //     chainId,
+        //     provider,
+        //     this.multicall2Provider,
+        //     RETRY_OPTIONS[chainId],
+        //     (_) => BATCH_PARAMS[chainId]!,
+        //     GAS_ERROR_FAILURE_OVERRIDES[chainId],
+        //     SUCCESS_RATE_FAILURE_OVERRIDES[chainId],
+        //     BLOCK_NUMBER_CONFIGS[chainId]
+        //   );
+        //   break;
+        default:
+          this.onChainQuoteProvider = new OnChainQuoteProvider(
+            chainId,
+            provider,
+            this.multicall2Provider,
+            DEFAULT_RETRY_OPTIONS,
+            (_) => DEFAULT_BATCH_PARAMS,
+            DEFAULT_GAS_ERROR_FAILURE_OVERRIDES,
+            DEFAULT_SUCCESS_RATE_FAILURE_OVERRIDES,
+            DEFAULT_BLOCK_NUMBER_CONFIGS
+          );
+          break;
+      }
+    }
 
     if (tokenPropertiesProvider) {
       this.tokenPropertiesProvider = tokenPropertiesProvider;
@@ -396,19 +626,6 @@ export class AlphaRouter
         new OnChainTokenFeeFetcher(this.chainId, provider)
       );
     }
-
-    // this.tokenProvider =
-    //   tokenProvider ??
-    //   new CachingTokenProviderWithFallback(
-    //     chainId,
-    //     new NodeJSCache(new NodeCache({ stdTTL: 3600, useClones: false })),
-    //     new CachingTokenListProvider(
-    //       chainId,
-    //       DEFAULT_TOKEN_LIST,
-    //       new NodeJSCache(new NodeCache({ stdTTL: 3600, useClones: false }))
-    //     ),
-    //     new TokenProvider(chainId, this.multicall2Provider)
-    //   );
 
     this.portionProvider = portionProvider ?? new PortionProvider();
 

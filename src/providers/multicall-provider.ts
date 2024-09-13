@@ -12,7 +12,10 @@ export type CallSameFunctionOnMultipleContractsParams<TFunctionParams, TAddition
   additionalConfig?: TAdditionalConfig;
 };
 
-export type CallSameFunctionOnContractWithMultipleParams<TFunctionParams, TAdditionalConfig = any> = {
+export type CallSameFunctionOnContractWithMultipleParams<
+  TFunctionParams,
+  TAdditionalConfig = any
+> = {
   address: string;
   contractInterface: Interface;
   functionName: string;
@@ -38,6 +41,7 @@ export type SuccessResult<TReturn> = {
 export type FailResult = {
   success: false;
   returnData: string;
+  gasUsed?: BigNumber;
 };
 
 export type Result<TReturn> = SuccessResult<TReturn> | FailResult;
@@ -63,7 +67,10 @@ export abstract class IMulticallProvider<TMulticallConfig = any> {
    * @param params
    * @returns {*}
    */
-  public abstract callSameFunctionOnMultipleContracts<TFunctionParams extends any[] | undefined, TReturn = any>(
+  public abstract callSameFunctionOnMultipleContracts<
+    TFunctionParams extends any[] | undefined,
+    TReturn = any
+  >(
     params: CallSameFunctionOnMultipleContractsParams<TFunctionParams, TMulticallConfig>
   ): Promise<{
     blockNumber: BigNumber;
@@ -92,7 +99,10 @@ export abstract class IMulticallProvider<TMulticallConfig = any> {
     results: Result<TReturn>[];
   }>;
 
-  public abstract callMultipleFunctionsOnSameContract<TFunctionParams extends any[] | undefined, TReturn = any>(
+  public abstract callMultipleFunctionsOnSameContract<
+    TFunctionParams extends any[] | undefined,
+    TReturn = any
+  >(
     params: CallMultipleFunctionsOnSameContractParams<TFunctionParams, TMulticallConfig>
   ): Promise<{
     blockNumber: BigNumber;

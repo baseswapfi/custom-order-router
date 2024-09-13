@@ -35,6 +35,8 @@ export class MixedRoute extends MixedRouteSDK<Token, Token> {
   protocol: Protocol.MIXED = Protocol.MIXED;
 }
 
+export type SupportedRoutes = V3Route | V2Route | MixedRoute;
+
 export type SwapRoute = {
   /**
    * The quote for the swap.
