@@ -1,5 +1,5 @@
 import { ChainId, Currency, Token, TradeType } from '@baseswapfi/sdk-core';
-import { ZERO } from '@baseswapfi/router-sdk';
+import { Protocol, ZERO } from '@baseswapfi/router-sdk';
 import { Position } from '@baseswapfi/v3-sdk2';
 
 import { BigNumber } from '@ethersproject/bignumber';
@@ -60,6 +60,8 @@ import {
   IV2PoolProvider,
   V2PoolProvider,
   CachingV2PoolProvider,
+  CacheMode,
+  CachedRoutes,
   // URISubgraphProvider,
   // V2QuoteProvider,
   // V2SubgraphProviderWithFallBacks,
@@ -98,6 +100,7 @@ import {
   log,
   metric,
   MetricLoggerUnit,
+  shouldWipeoutCachedRoutes,
   V2_SUPPORTED,
   WRAPPED_NATIVE_CURRENCY,
 } from '../../util';
@@ -242,11 +245,15 @@ export type AlphaRouterConfig = {
    * use the latest block returned by the provider.
    */
   blockNumber?: number | Promise<number>;
-  //  /**
-  //   * The protocols to consider when finding the optimal swap. If not provided all protocols
-  //   * will be used.
-  //   */
-  //  protocols?: Protocol[];
+  /**
+   * The protocols to consider when finding the optimal swap. If not provided all protocols
+   * will be used.
+   */
+  protocols?: Protocol[];
+  /**
+   * The protocols-version pools to be excluded from the mixed routes.
+   */
+  excludedProtocolsFromMixed?: Protocol[];
   /**
    * Config for selecting which pools to consider routing via on V2.
    */
@@ -288,29 +295,29 @@ export type AlphaRouterConfig = {
    * 40% of input => Route 3
    */
   distributionPercent: number;
-  //  /**
-  //   * Flag to indicate whether to use the cached routes or not.
-  //   * By default, the cached routes will be used.
-  //   */
-  //  useCachedRoutes?: boolean;
+  /**
+   * Flag to indicate whether to use the cached routes or not.
+   * By default, the cached routes will be used.
+   */
+  useCachedRoutes?: boolean;
   //  /**
   //   * Flag to indicate whether to write to the cached routes or not.
   //   * By default, the cached routes will be written to.
   //   */
   //  writeToCachedRoutes?: boolean;
-  //  /**
-  //   * Flag to indicate whether to use the CachedRoutes in optimistic mode.
-  //   * Optimistic mode means that we will allow blocksToLive greater than 1.
-  //   */
-  //  optimisticCachedRoutes?: boolean;
+  /**
+   * Flag to indicate whether to use the CachedRoutes in optimistic mode.
+   * Optimistic mode means that we will allow blocksToLive greater than 1.
+   */
+  optimisticCachedRoutes?: boolean;
   /**
    * Debug param that helps to see the short-term latencies improvements without impacting the main path.
    */
   debugRouting?: boolean;
-  //  /**
-  //   * Flag that allow us to override the cache mode.
-  //   */
-  //  overwriteCacheMode?: CacheMode;
+  /**
+   * Flag that allow us to override the cache mode.
+   */
+  overwriteCacheMode?: CacheMode;
   //  /**
   //   * Flag for token properties provider to enable fetching fee-on-transfer tokens.
   //   */
@@ -741,9 +748,6 @@ export class AlphaRouter
     const tokenIn = currencyIn.wrapped;
     const tokenOut = currencyOut.wrapped;
 
-    console.log('tokenIn', tokenIn);
-    console.log('tokenOut', tokenOut);
-
     const tokenOutProperties = await this.tokenPropertiesProvider.getTokensProperties(
       [tokenOut],
       partialRoutingConfig
@@ -848,6 +852,38 @@ export class AlphaRouter
       v3GasModel: v3GasModel,
       mixedRouteGasModel: mixedRouteGasModel,
     } = await this.getGasModels(gasPriceWei, amount.currency.wrapped, quoteToken, providerConfig);
+
+    // Create a Set to sanitize the protocols input, a Set of undefined becomes an empty set,
+    // Then create an Array from the values of that Set.
+    const protocols: Protocol[] = Array.from(new Set(routingConfig.protocols).values());
+
+    const cacheMode =
+      routingConfig.overwriteCacheMode ??
+      (await this.routeCachingProvider?.getCacheMode(
+        this.chainId,
+        amount,
+        quoteToken,
+        tradeType,
+        protocols
+      ));
+
+    // Fetch CachedRoutes
+    let cachedRoutes: CachedRoutes | undefined;
+    if (routingConfig.useCachedRoutes && cacheMode !== CacheMode.Darkmode) {
+      cachedRoutes = await this.routeCachingProvider?.getCachedRoute(
+        this.chainId,
+        amount,
+        quoteToken,
+        tradeType,
+        protocols,
+        await blockNumber,
+        routingConfig.optimisticCachedRoutes
+      );
+    }
+
+    if (shouldWipeoutCachedRoutes(cachedRoutes, routingConfig)) {
+      cachedRoutes = undefined;
+    }
 
     return null;
   }
