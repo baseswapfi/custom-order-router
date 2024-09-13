@@ -33,6 +33,8 @@ export type TokenAccessor = {
   getAllTokens: () => Token[];
 };
 
+// Optimism
+
 export const USDC_OPTIMISM = new Token(
   ChainId.OPTIMISM,
   '0x7F5c764cBc14f9669B88837ca1490cCa17c31607',
@@ -40,8 +42,44 @@ export const USDC_OPTIMISM = new Token(
   'USDC',
   'USD//C'
 );
+export const USDC_NATIVE_OPTIMISM = new Token(
+  ChainId.OPTIMISM,
+  '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
+  6,
+  'USDC',
+  'USD//C'
+);
+export const USDT_OPTIMISM = new Token(
+  ChainId.OPTIMISM,
+  '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
+  6,
+  'USDT',
+  'Tether USD'
+);
+export const WBTC_OPTIMISM = new Token(
+  ChainId.OPTIMISM,
+  '0x68f180fcCe6836688e9084f035309E29Bf0A2095',
+  8,
+  'WBTC',
+  'Wrapped BTC'
+);
+export const DAI_OPTIMISM = new Token(
+  ChainId.OPTIMISM,
+  '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
+  18,
+  'DAI',
+  'Dai Stablecoin'
+);
+export const OP_OPTIMISM = new Token(
+  ChainId.OPTIMISM,
+  '0x4200000000000000000000000000000000000042',
+  18,
+  'OP',
+  'Optimism'
+);
 
 // Base Tokens
+
 export const USDC_BASE = new Token(
   ChainId.BASE,
   '0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA',
@@ -106,10 +144,30 @@ export const ARB_ARBITRUM = new Token(
   'Arbitrum'
 );
 
+export const USDC_NATIVE_ARBITRUM = new Token(
+  ChainId.ARBITRUM,
+  '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+  6,
+  'USDC',
+  'USD//C'
+);
+
 // MODE
 
-export const USDC_MODE = new Token(ChainId.MODE, '0xd988097fb8612cc24eeC14542bC03424c656005f', 6, 'USDC', 'USDC');
-export const USDT_MODE = new Token(ChainId.MODE, '0xf0F161fDA2712DB8b566946122a5af183995e2eD', 6, 'USDT', 'Tether USD');
+export const USDC_MODE = new Token(
+  ChainId.MODE,
+  '0xd988097fb8612cc24eeC14542bC03424c656005f',
+  6,
+  'USDC',
+  'USDC'
+);
+export const USDT_MODE = new Token(
+  ChainId.MODE,
+  '0xf0F161fDA2712DB8b566946122a5af183995e2eD',
+  6,
+  'USDT',
+  'Tether USD'
+);
 export const DAI_MODE = new Token(
   ChainId.MODE,
   '0xE7798f023fC62146e8Aa1b36Da45fb70855a77Ea',
@@ -142,14 +200,20 @@ export class TokenProvider implements ITokenProvider {
     let isBytes32 = false;
 
     try {
-      result = await this.multicall2Provider.callSameFunctionOnMultipleContracts<undefined, [string]>({
+      result = await this.multicall2Provider.callSameFunctionOnMultipleContracts<
+        undefined,
+        [string]
+      >({
         addresses,
         contractInterface: IERC20Metadata__factory.createInterface(),
         functionName: 'symbol',
         providerConfig,
       });
     } catch (error) {
-      log.error({ addresses }, `TokenProvider.getTokenSymbol[string] failed with error ${error}. Trying with bytes32.`);
+      log.error(
+        { addresses },
+        `TokenProvider.getTokenSymbol[string] failed with error ${error}. Trying with bytes32.`
+      );
 
       const bytes32Interface = new Interface([
         {
@@ -168,7 +232,10 @@ export class TokenProvider implements ITokenProvider {
       ]);
 
       try {
-        result = await this.multicall2Provider.callSameFunctionOnMultipleContracts<undefined, [string]>({
+        result = await this.multicall2Provider.callSameFunctionOnMultipleContracts<
+          undefined,
+          [string]
+        >({
           addresses,
           contractInterface: bytes32Interface,
           functionName: 'symbol',
@@ -176,7 +243,10 @@ export class TokenProvider implements ITokenProvider {
         });
         isBytes32 = true;
       } catch (error) {
-        log.fatal({ addresses }, `TokenProvider.getTokenSymbol[bytes32] failed with error ${error}.`);
+        log.fatal(
+          { addresses },
+          `TokenProvider.getTokenSymbol[bytes32] failed with error ${error}.`
+        );
 
         throw new Error('[TokenProvider.getTokenSymbol] Impossible to fetch token symbol.');
       }
@@ -194,7 +264,10 @@ export class TokenProvider implements ITokenProvider {
     });
   }
 
-  public async getTokens(_addresses: string[], providerConfig?: ProviderConfig): Promise<TokenAccessor> {
+  public async getTokens(
+    _addresses: string[],
+    providerConfig?: ProviderConfig
+  ): Promise<TokenAccessor> {
     const addressToToken: { [address: string]: Token } = {};
     const symbolToToken: { [symbol: string]: Token } = {};
 
@@ -230,7 +303,9 @@ export class TokenProvider implements ITokenProvider {
           continue;
         }
 
-        const symbol = isBytes32 ? parseBytes32String(symbolResult.result[0]!) : symbolResult.result[0]!;
+        const symbol = isBytes32
+          ? parseBytes32String(symbolResult.result[0]!)
+          : symbolResult.result[0]!;
         const decimal = decimalResult.result[0]!;
 
         addressToToken[address.toLowerCase()] = new Token(this.chainId, address, decimal, symbol);

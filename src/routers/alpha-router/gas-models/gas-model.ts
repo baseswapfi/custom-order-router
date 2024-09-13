@@ -49,6 +49,7 @@ export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
 
 export type L1ToL2GasCosts = {
   gasUsedL1: BigNumber;
+  gasUsedL1OnL2: BigNumber;
   gasCostL1USD: CurrencyAmount;
   gasCostL1QuoteToken: CurrencyAmount;
 };
@@ -116,6 +117,7 @@ export type IGasModel<TRouteWithValidQuote extends RouteWithValidQuote> = {
     gasEstimate: BigNumber;
     gasCostInToken: CurrencyAmount;
     gasCostInUSD: CurrencyAmount;
+    gasCostInGasToken?: CurrencyAmount;
   };
   calculateL1GasFees?(routes: TRouteWithValidQuote[]): Promise<L1ToL2GasCosts>;
 };
@@ -137,6 +139,7 @@ export abstract class IV2GasModelFactory {
     gasPriceWei,
     poolProvider,
     token,
+    providerConfig,
   }: BuildV2GasModelFactoryType): Promise<IGasModel<V2RouteWithValidQuote>>;
 }
 
