@@ -1,5 +1,5 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Token, V3_CORE_FACTORY_ADDRESSES } from '@baseswapfi/sdk-core';
+import { ChainId, Currency, Token, V3_CORE_FACTORY_ADDRESSES } from '@baseswapfi/sdk-core';
 import { computePoolAddress, FeeAmount, Pool, POOL_INIT_CODE_HASH_MAP } from '@baseswapfi/v3-sdk2';
 import retry, { Options as RetryOptions } from 'async-retry';
 import _ from 'lodash';
@@ -61,6 +61,13 @@ export type V3PoolAccessor = {
   getPoolByAddress: (address: string) => Pool | undefined;
   getAllPools: () => Pool[];
 };
+
+// TODO: export sortsBefore from v4-sdk https://github.com/Uniswap/sdks/tree/main/sdks/v4-sdk/src/utils to avoid duplication
+export function sortsBefore(currencyA: Currency, currencyB: Currency): boolean {
+  if (currencyA.isNative) return true;
+  if (currencyB.isNative) return false;
+  return currencyA.wrapped.sortsBefore(currencyB.wrapped);
+}
 
 export type V3PoolRetryOptions = RetryOptions;
 

@@ -1,17 +1,21 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Currency, Ether, Token } from '@baseswapfi/sdk-core';
+import { ChainId, Currency, Ether, Token, V3_CORE_FACTORY_ADDRESSES } from '@baseswapfi/sdk-core';
 import { Pair } from '@baseswapfi/v2-sdk';
-import { encodeSqrtRatioX96, FeeAmount, Pool as V3Pool } from '@baseswapfi/v3-sdk2';
+import {
+  encodeSqrtRatioX96,
+  FeeAmount,
+  POOL_INIT_CODE_HASH_MAP,
+  Pool as V3Pool,
+} from '@baseswapfi/v3-sdk2';
 import _ from 'lodash';
 import {
   AlphaRouterConfig,
   CurrencyAmount,
-  DAI_BASE as DAI,
   DAI_BASE,
   TokenAccessor,
   TokenList,
   // UNI_MAINNET,
-  USDC_BASE as USDC,
+  // USDC_NATIVE_BASE as USDC,
   USDC_BASE,
   // USDT_MAINNET as USDT,
   V2PoolAccessor,
@@ -22,9 +26,14 @@ import {
   WRAPPED_NATIVE_CURRENCY,
 } from '../../src';
 
-export const mockBlock = 123456789;
+export const mockBlock = 19944732; // BASE 9/18 ~1:00PM
 export const mockGasPriceWeiBN = BigNumber.from(100000);
 export const mockBlockBN = BigNumber.from(mockBlock);
+
+export const TEST_CHAIN_ID = ChainId.BASE;
+export const TEST_CHAIN_WETH = WRAPPED_NATIVE_CURRENCY[TEST_CHAIN_ID]!;
+export const TEST_CHAIN_USDC = USDC_BASE;
+export const TEST_CHAIN_DAI = DAI_BASE;
 
 export const mockRoutingConfig: AlphaRouterConfig = {
   v3PoolSelection: {
@@ -52,7 +61,7 @@ export const mockRoutingConfig: AlphaRouterConfig = {
 
 // Mock 0 decimal token
 export const MOCK_ZERO_DEC_TOKEN = new Token(
-  ChainId.BASE,
+  TEST_CHAIN_ID,
   '0x11fe4b6ae13d2a6055c8d9cf65c55bac32b5d844',
   0,
   'MOCK',
@@ -61,7 +70,7 @@ export const MOCK_ZERO_DEC_TOKEN = new Token(
 
 // Mock V3 Pools
 export const USDC_MOCK_LOW = new V3Pool(
-  USDC,
+  TEST_CHAIN_USDC,
   MOCK_ZERO_DEC_TOKEN,
   FeeAmount.LOW,
   encodeSqrtRatioX96(1, 1),
@@ -70,17 +79,17 @@ export const USDC_MOCK_LOW = new V3Pool(
 );
 
 export const USDC_WETH_LOW = new V3Pool(
-  USDC,
-  WRAPPED_NATIVE_CURRENCY[1]!,
+  TEST_CHAIN_USDC,
+  TEST_CHAIN_WETH,
   FeeAmount.LOW,
   encodeSqrtRatioX96(1, 1),
-  500,
+  FeeAmount.LOW,
   0
 );
 
 export const USDC_WETH_MEDIUM = new V3Pool(
-  USDC,
-  WRAPPED_NATIVE_CURRENCY[1]!,
+  TEST_CHAIN_USDC,
+  TEST_CHAIN_WETH,
   FeeAmount.MEDIUM,
   encodeSqrtRatioX96(1, 1),
   500,
@@ -90,8 +99,8 @@ export const USDC_WETH_MEDIUM = new V3Pool(
 // Mock USDC weth pools with different liquidity
 
 export const USDC_WETH_LOW_LIQ_LOW = new V3Pool(
-  USDC,
-  WRAPPED_NATIVE_CURRENCY[1]!,
+  TEST_CHAIN_USDC,
+  TEST_CHAIN_WETH,
   FeeAmount.LOW,
   encodeSqrtRatioX96(1, 1),
   100,
@@ -99,8 +108,8 @@ export const USDC_WETH_LOW_LIQ_LOW = new V3Pool(
 );
 
 export const USDC_WETH_MED_LIQ_MEDIUM = new V3Pool(
-  USDC,
-  WRAPPED_NATIVE_CURRENCY[1]!,
+  TEST_CHAIN_USDC,
+  TEST_CHAIN_WETH,
   FeeAmount.MEDIUM,
   encodeSqrtRatioX96(1, 1),
   500,
@@ -108,8 +117,8 @@ export const USDC_WETH_MED_LIQ_MEDIUM = new V3Pool(
 );
 
 export const USDC_WETH_HIGH_LIQ_HIGH = new V3Pool(
-  USDC,
-  WRAPPED_NATIVE_CURRENCY[1]!,
+  TEST_CHAIN_USDC,
+  TEST_CHAIN_WETH,
   FeeAmount.HIGH,
   encodeSqrtRatioX96(1, 1),
   1000,
@@ -124,10 +133,17 @@ export const USDC_WETH_HIGH_LIQ_HIGH = new V3Pool(
 //   200,
 //   0
 // );
-export const USDC_DAI_LOW = new V3Pool(USDC, DAI, FeeAmount.LOW, encodeSqrtRatioX96(1, 1), 10, 0);
+export const USDC_DAI_LOW = new V3Pool(
+  TEST_CHAIN_USDC,
+  TEST_CHAIN_DAI,
+  FeeAmount.LOW,
+  encodeSqrtRatioX96(1, 1),
+  10,
+  0
+);
 export const USDC_DAI_MEDIUM = new V3Pool(
-  USDC,
-  DAI,
+  TEST_CHAIN_USDC,
+  TEST_CHAIN_DAI,
   FeeAmount.MEDIUM,
   encodeSqrtRatioX96(1, 1),
   8,
@@ -159,8 +175,8 @@ export const USDC_DAI_MEDIUM = new V3Pool(
 //   0
 // );
 export const DAI_WETH_MEDIUM = new V3Pool(
-  DAI,
-  WRAPPED_NATIVE_CURRENCY[1]!,
+  TEST_CHAIN_DAI,
+  TEST_CHAIN_WETH,
   FeeAmount.MEDIUM,
   encodeSqrtRatioX96(1, 1),
   10,
@@ -198,13 +214,13 @@ export const DAI_WETH_MEDIUM = new V3Pool(
 // );
 
 export const DAI_WETH = new Pair(
-  CurrencyAmount.fromRawAmount(DAI, 10000000000),
-  CurrencyAmount.fromRawAmount(WRAPPED_NATIVE_CURRENCY[1]!, 10000000000)
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_DAI, 10000000000),
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_WETH, 10000000000)
 );
 
 export const USDC_WETH = new Pair(
-  CurrencyAmount.fromRawAmount(USDC, 10000000000),
-  CurrencyAmount.fromRawAmount(WRAPPED_NATIVE_CURRENCY[1]!, 10000000000)
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_USDC, 10000000000),
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_WETH, 10000000000)
 );
 
 // export const USDC_USDT = new Pair(
@@ -218,18 +234,18 @@ export const USDC_WETH = new Pair(
 // );
 
 export const USDC_DAI = new Pair(
-  CurrencyAmount.fromRawAmount(USDC, 10000000000),
-  CurrencyAmount.fromRawAmount(DAI, 10000000000)
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_USDC, 10000000000),
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_DAI, 10000000000)
 );
 
 export const WETH_DAI = new Pair(
-  CurrencyAmount.fromRawAmount(DAI, 10000000000),
-  CurrencyAmount.fromRawAmount(WRAPPED_NATIVE_CURRENCY[1]!, 10000000000)
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_DAI, 10000000000),
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_WETH, 10000000000)
 );
 
 export const WBTC_WETH = new Pair(
   CurrencyAmount.fromRawAmount(WBTC, 10000000000),
-  CurrencyAmount.fromRawAmount(WRAPPED_NATIVE_CURRENCY[1]!, 10000000000)
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_WETH, 10000000000)
 );
 
 export const poolToV3SubgraphPool = (pool: V3Pool, idx: number | string): V3SubgraphPool => {
@@ -269,13 +285,26 @@ export const buildMockV3PoolAccessor: (pools: V3Pool[]) => V3PoolAccessor = (poo
     getPoolByAddress: (address: string) =>
       _.find(
         pools,
-        (p) => V3Pool.getAddress(p.token0, p.token1, p.fee).toLowerCase() == address.toLowerCase()
+        (p) =>
+          V3Pool.getAddress(
+            p.token0,
+            p.token1,
+            p.fee,
+            POOL_INIT_CODE_HASH_MAP[TEST_CHAIN_ID],
+            V3_CORE_FACTORY_ADDRESSES[TEST_CHAIN_ID]
+          ).toLowerCase() == address.toLowerCase()
       ),
     getPool: (tokenA, tokenB, fee) =>
       _.find(
         pools,
         (p) =>
-          V3Pool.getAddress(p.token0, p.token1, p.fee) == V3Pool.getAddress(tokenA, tokenB, fee)
+          V3Pool.getAddress(
+            p.token0,
+            p.token1,
+            p.fee,
+            POOL_INIT_CODE_HASH_MAP[TEST_CHAIN_ID],
+            V3_CORE_FACTORY_ADDRESSES[TEST_CHAIN_ID]
+          ) == V3Pool.getAddress(tokenA, tokenB, fee)
       ),
   };
 };
@@ -303,60 +332,60 @@ export const buildMockTokenAccessor: (tokens: Token[]) => TokenAccessor = (token
   };
 };
 
-export const mockTokenList: TokenList = {
-  name: 'Tokens',
-  timestamp: '2021-01-05T20:47:02.923Z',
-  version: {
-    major: 1,
-    minor: 0,
-    patch: 0,
-  },
-  tags: {},
-  logoURI: 'ipfs://QmNa8mQkrNKp1WEEeGjFezDmDeodkWRevGFN8JCV7b4Xir',
-  keywords: ['uniswap'],
-  tokens: [
-    {
-      name: 'USDC',
-      address: USDC_BASE.address,
-      symbol: 'USDC',
-      decimals: 6,
-      chainId: ChainId.BASE,
-      logoURI: '',
-    },
-    // {
-    //   name: 'USDT',
-    //   address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-    //   symbol: 'USDT',
-    //   decimals: 6,
-    //   chainId:  ChainId.BASE,
-    //   logoURI: '',
-    // },
-    {
-      name: 'DAI',
-      address: DAI_BASE.address,
-      symbol: 'DAI',
-      decimals: 18,
-      chainId: ChainId.BASE,
-      logoURI: '',
-    },
-    {
-      name: 'USDT',
-      address: '0x110a13FC3efE6A245B50102D2d79B3E76125Ae83',
-      symbol: 'USDT',
-      decimals: 18,
-      chainId: 2,
-      logoURI: '',
-    },
-    {
-      name: 'WBTC',
-      address: '0x577D296678535e4903D59A4C929B718e1D575e0A',
-      symbol: 'WBTC',
-      decimals: 18,
-      chainId: 777,
-      logoURI: '',
-    },
-  ],
-};
+// export const mockTokenList: TokenList = {
+//   name: 'Tokens',
+//   timestamp: '2021-01-05T20:47:02.923Z',
+//   version: {
+//     major: 1,
+//     minor: 0,
+//     patch: 0,
+//   },
+//   tags: {},
+//   logoURI: 'ipfs://QmNa8mQkrNKp1WEEeGjFezDmDeodkWRevGFN8JCV7b4Xir',
+//   keywords: ['uniswap'],
+//   tokens: [
+//     {
+//       name: 'USDC',
+//       address: USDC_BASE.address,
+//       symbol: 'USDC',
+//       decimals: 6,
+//       chainId: TEST_CHAIN_ID,
+//       logoURI: '',
+//     },
+//     // {
+//     //   name: 'USDT',
+//     //   address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+//     //   symbol: 'USDT',
+//     //   decimals: 6,
+//     //   chainId:  testChainid,
+//     //   logoURI: '',
+//     // },
+//     {
+//       name: 'DAI',
+//       address: DAI_BASE.address,
+//       symbol: 'DAI',
+//       decimals: 18,
+//       chainId: TEST_CHAIN_ID,
+//       logoURI: '',
+//     },
+//     {
+//       name: 'USDT',
+//       address: '0x110a13FC3efE6A245B50102D2d79B3E76125Ae83',
+//       symbol: 'USDT',
+//       decimals: 18,
+//       chainId: 2,
+//       logoURI: '',
+//     },
+//     {
+//       name: 'WBTC',
+//       address: '0x577D296678535e4903D59A4C929B718e1D575e0A',
+//       symbol: 'WBTC',
+//       decimals: 18,
+//       chainId: 777,
+//       logoURI: '',
+//     },
+//   ],
+// };
 
 export const PORTION_BIPS = 12;
 export const PORTION_RECIPIENT = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045';
@@ -375,12 +404,12 @@ export const FLAT_PORTION: Portion = {
 };
 
 export const GREENLIST_TOKEN_PAIRS: Array<[Currency, Currency]> = [
-  [Ether.onChain(ChainId.BASE), USDC],
-  [WRAPPED_NATIVE_CURRENCY[ChainId.BASE], USDC],
-  [DAI, WBTC],
+  [Ether.onChain(TEST_CHAIN_ID), TEST_CHAIN_USDC],
+  [WRAPPED_NATIVE_CURRENCY[TEST_CHAIN_ID], TEST_CHAIN_USDC],
+  [TEST_CHAIN_DAI, WBTC],
 ];
 
 export const GREENLIST_CARVEOUT_PAIRS: Array<[Currency, Currency]> = [
-  [USDC, DAI],
-  [WRAPPED_NATIVE_CURRENCY[ChainId.BASE], Ether.onChain(ChainId.BASE)],
+  [TEST_CHAIN_USDC, TEST_CHAIN_DAI],
+  [WRAPPED_NATIVE_CURRENCY[TEST_CHAIN_ID], Ether.onChain(TEST_CHAIN_ID)],
 ];

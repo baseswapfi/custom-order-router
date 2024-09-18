@@ -4,7 +4,9 @@ import { ADDRESS_ZERO, FeeAmount } from '@baseswapfi/v3-sdk2';
 import _ from 'lodash';
 
 import {
+  cbBTC_BASE,
   DAI_ARBITRUM,
+  DAI_BASE,
   DAI_MODE,
   DAI_OPTIMISM,
   ITokenListProvider,
@@ -16,6 +18,7 @@ import {
   USDC_ARBITRUM,
   USDC_BASE,
   USDC_MODE,
+  USDC_NATIVE_BASE,
   USDC_OPTIMISM,
   USDT_ARBITRUM,
   USDT_MODE,
@@ -25,6 +28,7 @@ import {
   V3PoolAccessor,
   V3SubgraphPool,
   WBTC_ARBITRUM,
+  WBTC_MODE,
   WBTC_OPTIMISM,
 } from '../../../providers';
 import { metric, MetricLoggerUnit } from '../../../util/metric';
@@ -190,8 +194,8 @@ const baseTokensByChain: { [chainId in ChainId]?: Token[] } = {
   // ],
   // [ChainId.BNB]: [DAI_BNB, USDC_BNB, USDT_BNB],
   // [ChainId.AVALANCHE]: [DAI_AVAX, USDC_AVAX],
-  [ChainId.BASE]: [USDC_BASE],
-  [ChainId.MODE]: [USDC_MODE, USDT_MODE, DAI_MODE],
+  [ChainId.BASE]: [USDC_BASE, USDC_NATIVE_BASE, DAI_BASE, cbBTC_BASE],
+  [ChainId.MODE]: [USDC_MODE, USDT_MODE, DAI_MODE, WBTC_MODE],
   // [ChainId.BLAST]: [WRAPPED_NATIVE_CURRENCY[ChainId.BLAST]!, USDB_BLAST],
   // [ChainId.ZORA]: [WRAPPED_NATIVE_CURRENCY[ChainId.ZORA]!],
   // [ChainId.ZKSYNC]: [WRAPPED_NATIVE_CURRENCY[ChainId.ZKSYNC]!],
@@ -243,6 +247,8 @@ export async function getV3CandidatePools({
     blockNumber,
   });
 
+  console.log(allPools);
+
   log.info({ samplePools: allPools.slice(0, 3) }, 'Got all pools from V3 subgraph provider');
 
   // Although this is less of an optimization than the V2 equivalent,
@@ -265,8 +271,12 @@ export async function getV3CandidatePools({
   if (blockedTokenListProvider) {
     filteredPools = [];
     for (const pool of allPools) {
-      const token0InBlocklist = await blockedTokenListProvider.hasTokenByAddress(pool.token0.id);
-      const token1InBlocklist = await blockedTokenListProvider.hasTokenByAddress(pool.token1.id);
+      // const token0InBlocklist = await blockedTokenListProvider.hasTokenByAddress(pool.token0.id);
+      // const token1InBlocklist = await blockedTokenListProvider.hasTokenByAddress(pool.token1.id);
+      const [token0InBlocklist, token1InBlocklist] = await Promise.all([
+        blockedTokenListProvider.hasTokenByAddress(pool.token0.id),
+        blockedTokenListProvider.hasTokenByAddress(pool.token1.id),
+      ]);
 
       if (token0InBlocklist || token1InBlocklist) {
         continue;
@@ -290,7 +300,8 @@ export async function getV3CandidatePools({
       .forEach((poolAddress) => poolAddressesSoFar.add(poolAddress));
   };
 
-  const baseTokens = baseTokensByChain[chainId] ?? [];
+  // const baseTokens = baseTokensByChain[chainId] ?? [];
+  const baseTokens = [USDC_BASE, USDC_NATIVE_BASE, DAI_BASE, cbBTC_BASE];
 
   const topByBaseWithTokenIn = _(baseTokens)
     .flatMap((token: Token) => {
