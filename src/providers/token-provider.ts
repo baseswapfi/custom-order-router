@@ -88,6 +88,22 @@ export const USDC_BASE = new Token(
   'USD Base Coin'
 );
 
+export const USDC_NATIVE_BASE = new Token(
+  ChainId.BASE,
+  '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+  6,
+  'USDC',
+  'USD Coin'
+);
+
+export const cbBTC_BASE = new Token(
+  ChainId.BASE,
+  '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
+  8,
+  'cbBTC',
+  'Coinbase Bitcoin'
+);
+
 export const DAI_BASE = new Token(
   ChainId.BASE,
   '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
