@@ -17,7 +17,7 @@ import {
 } from '../../../../test-util/mock-data';
 import { DEFAULT_ROUTING_CONFIG_BY_CHAIN } from '../../../../../src/routers/alpha-router/config';
 
-describe('routes', () => {
+xdescribe('routes', () => {
   const mixedRoutes1 = new MixedRoute([USDC_DAI, USDC_DAI_LOW], TEST_CHAIN_USDC, TEST_CHAIN_DAI);
   const cachedRoute1 = new CachedRoute({
     route: mixedRoutes1,

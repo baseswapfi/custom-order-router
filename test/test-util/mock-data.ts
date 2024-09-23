@@ -14,6 +14,7 @@ import {
   DAI_BASE,
   TokenAccessor,
   TokenList,
+  USD_PLUS_BASE,
   // UNI_MAINNET,
   // USDC_NATIVE_BASE as USDC,
   USDC_BASE,
@@ -22,7 +23,7 @@ import {
   V2SubgraphPool,
   V3PoolAccessor,
   V3SubgraphPool,
-  cbBTC_BASE as WBTC,
+  cbBTC_BASE,
   WRAPPED_NATIVE_CURRENCY,
 } from '../../src';
 
@@ -34,6 +35,8 @@ export const TEST_CHAIN_ID = ChainId.BASE;
 export const TEST_CHAIN_WETH = WRAPPED_NATIVE_CURRENCY[TEST_CHAIN_ID]!;
 export const TEST_CHAIN_USDC = USDC_BASE;
 export const TEST_CHAIN_DAI = DAI_BASE;
+export const TEST_CHAIN_USD_PLUS = USD_PLUS_BASE;
+export const TEST_CHAIN_WBTC = cbBTC_BASE;
 
 export const mockRoutingConfig: AlphaRouterConfig = {
   v3PoolSelection: {
@@ -125,14 +128,14 @@ export const USDC_WETH_HIGH_LIQ_HIGH = new V3Pool(
   0
 );
 
-// export const WETH9_USDT_LOW = new V3Pool(
-//   WRAPPED_NATIVE_CURRENCY[1]!,
-//   USDT,
-//   FeeAmount.LOW,
-//   encodeSqrtRatioX96(1, 1),
-//   200,
-//   0
-// );
+export const WETH9_USD_PLUS_LOW = new V3Pool(
+  TEST_CHAIN_WETH,
+  TEST_CHAIN_USD_PLUS,
+  FeeAmount.LOW,
+  encodeSqrtRatioX96(1, 1),
+  200,
+  0
+);
 export const USDC_DAI_LOW = new V3Pool(
   TEST_CHAIN_USDC,
   TEST_CHAIN_DAI,
@@ -158,6 +161,31 @@ export const USDC_DAI_MEDIUM = new V3Pool(
 //   0
 // );
 
+export const USDC_USD_PLUS_LOW = new V3Pool(
+  TEST_CHAIN_USDC,
+  TEST_CHAIN_USD_PLUS,
+  FeeAmount.LOW,
+  encodeSqrtRatioX96(1, 1),
+  10,
+  0
+);
+
+export const DAI_USD_PLUS_LOW = new V3Pool(
+  TEST_CHAIN_DAI,
+  TEST_CHAIN_USD_PLUS,
+  FeeAmount.LOW,
+  encodeSqrtRatioX96(1, 1),
+  10,
+  0
+);
+export const DAI_USD_PLUS_MEDIUM = new V3Pool(
+  TEST_CHAIN_DAI,
+  TEST_CHAIN_USD_PLUS,
+  FeeAmount.MEDIUM,
+  encodeSqrtRatioX96(1, 1),
+  10,
+  0
+);
 // export const DAI_USDT_LOW = new V3Pool(
 //   DAI,
 //   USDT,
@@ -182,6 +210,15 @@ export const DAI_WETH_MEDIUM = new V3Pool(
   10,
   0
 );
+
+export const WBTC_USD_PLUS_MEDIUM = new V3Pool(
+  TEST_CHAIN_USD_PLUS,
+  TEST_CHAIN_WBTC,
+  FeeAmount.MEDIUM,
+  encodeSqrtRatioX96(1, 1),
+  500,
+  0
+);
 // export const WBTC_USDT_MEDIUM = new V3Pool(
 //   USDT,
 //   WBTC,
@@ -190,16 +227,16 @@ export const DAI_WETH_MEDIUM = new V3Pool(
 //   500,
 //   0
 // );
-// export const WBTC_WETH_MEDIUM = new V3Pool(
-//   WRAPPED_NATIVE_CURRENCY[1]!,
-//   WBTC,
-//   FeeAmount.MEDIUM,
-//   encodeSqrtRatioX96(1, 1),
-//   500,
-//   0
-// );
+export const WBTC_WETH_MEDIUM = new V3Pool(
+  TEST_CHAIN_WETH,
+  TEST_CHAIN_WBTC,
+  FeeAmount.MEDIUM,
+  encodeSqrtRatioX96(1, 1),
+  500,
+  0
+);
 // export const UNI_WETH_MEDIUM = new V3Pool(
-//   WRAPPED_NATIVE_CURRENCY[1]!,
+//   TEST_CHAIN_WETH,
 //   UNI_MAINNET,
 //   FeeAmount.MEDIUM,
 //   encodeSqrtRatioX96(1, 1),
@@ -230,12 +267,22 @@ export const USDC_WETH = new Pair(
 
 // export const WETH_USDT = new Pair(
 //   CurrencyAmount.fromRawAmount(USDT, 10000000000),
-//   CurrencyAmount.fromRawAmount(WRAPPED_NATIVE_CURRENCY[1]!, 10000000000)
+//   CurrencyAmount.fromRawAmount(TEST_CHAIN_WETH, 10000000000)
 // );
+
+export const WETH_USD_PLUS = new Pair(
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_USD_PLUS, 10000000000),
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_WETH, 10000000000)
+);
 
 export const USDC_DAI = new Pair(
   CurrencyAmount.fromRawAmount(TEST_CHAIN_USDC, 10000000000),
   CurrencyAmount.fromRawAmount(TEST_CHAIN_DAI, 10000000000)
+);
+
+export const DAI_USD_PLUS = new Pair(
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_DAI, 10000000000),
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_USD_PLUS, 10000000000)
 );
 
 export const WETH_DAI = new Pair(
@@ -244,7 +291,7 @@ export const WETH_DAI = new Pair(
 );
 
 export const WBTC_WETH = new Pair(
-  CurrencyAmount.fromRawAmount(WBTC, 10000000000),
+  CurrencyAmount.fromRawAmount(TEST_CHAIN_WBTC, 10000000000),
   CurrencyAmount.fromRawAmount(TEST_CHAIN_WETH, 10000000000)
 );
 
@@ -406,7 +453,7 @@ export const FLAT_PORTION: Portion = {
 export const GREENLIST_TOKEN_PAIRS: Array<[Currency, Currency]> = [
   [Ether.onChain(TEST_CHAIN_ID), TEST_CHAIN_USDC],
   [WRAPPED_NATIVE_CURRENCY[TEST_CHAIN_ID], TEST_CHAIN_USDC],
-  [TEST_CHAIN_DAI, WBTC],
+  [TEST_CHAIN_DAI, TEST_CHAIN_WBTC],
 ];
 
 export const GREENLIST_CARVEOUT_PAIRS: Array<[Currency, Currency]> = [
