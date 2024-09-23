@@ -247,8 +247,6 @@ export async function getV3CandidatePools({
     blockNumber,
   });
 
-  console.log(allPools);
-
   log.info({ samplePools: allPools.slice(0, 3) }, 'Got all pools from V3 subgraph provider');
 
   // Although this is less of an optimization than the V2 equivalent,
@@ -300,8 +298,8 @@ export async function getV3CandidatePools({
       .forEach((poolAddress) => poolAddressesSoFar.add(poolAddress));
   };
 
-  // const baseTokens = baseTokensByChain[chainId] ?? [];
-  const baseTokens = [USDC_BASE, USDC_NATIVE_BASE, DAI_BASE, cbBTC_BASE];
+  const baseTokens = baseTokensByChain[chainId] ?? [];
+  // const baseTokens = [USDC_BASE, USDC_NATIVE_BASE, DAI_BASE, cbBTC_BASE];
 
   const topByBaseWithTokenIn = _(baseTokens)
     .flatMap((token: Token) => {
@@ -355,7 +353,7 @@ export async function getV3CandidatePools({
     // Optimistically add them into the query regardless. Invalid pools ones will be dropped anyway
     // when we query the pool on-chain. Ensures that new pools for new pairs can be swapped on immediately.
     top2DirectSwapPool = _.map(
-      [FeeAmount.HIGH, FeeAmount.MEDIUM, FeeAmount.LOW, FeeAmount.LOWEST],
+      [FeeAmount.HIGH, FeeAmount.MEDIUM, FeeAmount.LOW, FeeAmount.LOWER, FeeAmount.LOWEST],
       (feeAmount) => {
         const { token0, token1, poolAddress } = poolProvider.getPoolAddress(
           tokenIn,

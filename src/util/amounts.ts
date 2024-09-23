@@ -21,11 +21,11 @@ export function parseFeeAmount(feeAmountStr: string) {
       return FeeAmount.MEDIUM;
     case '450':
       return FeeAmount.LOW;
-    case '450':
-      return FeeAmount.LOWER;
     case '350':
+      return FeeAmount.LOWER;
+    case '80':
       return FeeAmount.LOWEST;
-    case '10':
+    case '1':
       return FeeAmount.EXTRA_LOWEST;
     default:
       throw new Error(`Fee amount ${feeAmountStr} not supported.`);
@@ -45,7 +45,7 @@ export function unparseFeeAmount(feeAmount: FeeAmount) {
     case FeeAmount.LOWEST:
       return '80';
     case FeeAmount.EXTRA_LOWEST:
-      return '10';
+      return '1';
     default:
       throw new Error(`Fee amount ${feeAmount} not supported.`);
   }
