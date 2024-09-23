@@ -1727,8 +1727,8 @@ export class AlphaRouter
       quotePromises.push(
         this.v2Quoter
           .refreshRoutesThenGetQuotes(
-            cachedRoutes.tokenIn,
-            cachedRoutes.tokenOut,
+            cachedRoutes.currencyIn.wrapped,
+            cachedRoutes.currencyOut.wrapped,
             v2RoutesFromCache,
             amounts,
             percents,

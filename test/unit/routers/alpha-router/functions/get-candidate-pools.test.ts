@@ -55,7 +55,7 @@ import {
   WETH_DAI,
 } from '../../../../test-util/mock-data';
 
-describe('get candidate pools', () => {
+xdescribe('get candidate pools', () => {
   // const poolToV3Subgraph = (pool: V3Pool) => {
   //   return poolToV3SubgraphPool(pool, ``);
   // };

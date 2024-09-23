@@ -22,7 +22,7 @@ export abstract class IRouteCachingProvider {
    * @readonly
    * @param chainId
    * @param amount
-   * @param quoteToken
+   * @param quoteCurrency
    * @param tradeType
    * @param protocols
    * @param blockNumber
@@ -31,14 +31,14 @@ export abstract class IRouteCachingProvider {
     // Defined as a readonly member instead of a regular function to make it final.
     chainId: number,
     amount: CurrencyAmount<Currency>,
-    quoteToken: Token,
+    quoteCurrency: Currency,
     tradeType: TradeType,
     protocols: Protocol[],
     blockNumber: number,
     optimistic = false
   ): Promise<CachedRoutes | undefined> => {
     if (
-      (await this.getCacheMode(chainId, amount, quoteToken, tradeType, protocols)) ==
+      (await this.getCacheMode(chainId, amount, quoteCurrency, tradeType, protocols)) ==
       CacheMode.Darkmode
     ) {
       return undefined;
@@ -47,7 +47,7 @@ export abstract class IRouteCachingProvider {
     const cachedRoute = await this._getCachedRoute(
       chainId,
       amount,
-      quoteToken,
+      quoteCurrency,
       tradeType,
       protocols,
       blockNumber,
@@ -90,35 +90,33 @@ export abstract class IRouteCachingProvider {
     cachedRoutes: CachedRoutes,
     amount: CurrencyAmount<Currency>
   ): Promise<CacheMode> {
-    const quoteToken =
+    const quoteCurrency =
       cachedRoutes.tradeType == TradeType.EXACT_INPUT
-        ? cachedRoutes.tokenOut
-        : cachedRoutes.tokenIn;
+        ? cachedRoutes.currencyOut
+        : cachedRoutes.currencyIn;
 
     return this.getCacheMode(
       cachedRoutes.chainId,
       amount,
-      quoteToken,
+      quoteCurrency,
       cachedRoutes.tradeType,
       cachedRoutes.protocolsCovered
     );
   }
 
   /**
-   * Returns the CacheMode for the given combination of chainId, tokenIn, tokenOut and tradetype
+   * Returns the CacheMode for the given combination of chainId, currencyIn, currencyOut and tradetype
    *
    * @public
    * @abstract
    * @param chainId
-   * @param tokenIn
-   * @param tokenOut
-   * @param tradeType
    * @param amount
+   * @param tradeType
    */
   public abstract getCacheMode(
     chainId: ChainId,
     amount: CurrencyAmount<Currency>,
-    quoteToken: Token,
+    quoteCurrency: Currency,
     tradeType: TradeType,
     protocols: Protocol[]
   ): Promise<CacheMode>;
@@ -137,7 +135,7 @@ export abstract class IRouteCachingProvider {
    *
    * @param chainId
    * @param amount
-   * @param quoteToken
+   * @param quoteCurrency
    * @param tradeType
    * @param protocols
    * @protected
@@ -145,7 +143,7 @@ export abstract class IRouteCachingProvider {
   protected abstract _getCachedRoute(
     chainId: ChainId,
     amount: CurrencyAmount<Currency>,
-    quoteToken: Token,
+    quoteCurrency: Currency,
     tradeType: TradeType,
     protocols: Protocol[],
     currentBlockNumber: number,
