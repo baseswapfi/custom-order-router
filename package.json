@@ -1,5 +1,5 @@
 {
-  "name": "uni-smart-order-router",
+  "name": "@baseswapfi/custom-order-router",
   "version": "1.0.0",
   "description": "Uniswap Smart Order Router",
   "main": "build/main/index.js",
