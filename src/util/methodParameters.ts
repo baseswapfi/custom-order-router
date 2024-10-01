@@ -19,6 +19,7 @@ import {
   V2RouteWithValidQuote,
   V3RouteWithValidQuote,
 } from '..';
+import { UniversalRouterVersion } from '@baseswapfi/universal-router-sdk/dist/utils/constants';
 
 export function buildTrade<TTradeType extends TradeType>(
   tokenInCurrency: Currency,
@@ -223,7 +224,7 @@ export function buildSwapMethodParameters(
   if (swapConfig.type == SwapType.UNIVERSAL_ROUTER) {
     return {
       ...UniversalRouter.swapERC20CallParameters(trade, swapConfig),
-      to: UNIVERSAL_ROUTER_ADDRESS(chainId),
+      to: UNIVERSAL_ROUTER_ADDRESS(UniversalRouterVersion.V1_2, chainId),
     };
   } else if (swapConfig.type == SwapType.SWAP_ROUTER_02) {
     const { recipient, slippageTolerance, deadline, inputTokenPermit } = swapConfig;
