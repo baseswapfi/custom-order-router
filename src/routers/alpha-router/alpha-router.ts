@@ -83,7 +83,6 @@ import { DEFAULT_ROUTING_CONFIG_BY_CHAIN, ETH_GAS_STATION_API_URL } from './conf
 import { OnChainTokenFeeFetcher } from '../../providers/token-fee-fetcher';
 import {
   ID_TO_CHAIN_ID,
-  ID_TO_NETWORK_NAME,
   log,
   metric,
   MetricLoggerUnit,
