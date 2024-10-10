@@ -1,5 +1,6 @@
-import { CHAIN_TO_ADDRESSES_MAP, ChainId, Token } from '@baseswapfi/sdk-core';
+import { CHAIN_TO_ADDRESSES_MAP, ChainId, Currency, Token } from '@baseswapfi/sdk-core';
 import { WRAPPED_NATIVE_CURRENCY } from './chains';
+import { ADDRESS_ZERO } from '@baseswapfi/v3-sdk2';
 
 export type AddressMap = { [chainId: number]: string | undefined };
 
@@ -54,3 +55,19 @@ export const NEW_QUOTER_V2_ADDRESSES: AddressMap = {
 };
 
 export const BEACON_CHAIN_DEPOSIT_ADDRESS = '0x00000000219ab540356cBB839Cbe05303d7705Fa';
+
+export function getAddressLowerCase(currency: Currency): string {
+  if (currency.isToken) {
+    return currency.address.toLowerCase();
+  } else {
+    return ADDRESS_ZERO;
+  }
+}
+
+export function getAddress(currency: Currency): string {
+  if (currency.isToken) {
+    return currency.address;
+  } else {
+    return ADDRESS_ZERO;
+  }
+}
