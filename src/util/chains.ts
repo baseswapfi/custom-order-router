@@ -325,7 +325,28 @@ export const WRAPPED_NATIVE_CURRENCY: { [chainId in ChainId]: Token } = {
     18,
     'WETH',
     'Wrapped Ether'
-  ), // TODO: Filler address here
+  ),
+  [ChainId.SONEIUM_TESTNET]: new Token(
+    ChainId.SONEIUM_TESTNET,
+    '0x4200000000000000000000000000000000000006',
+    18,
+    'WETH',
+    'Wrapped Ether'
+  ),
+  [ChainId.SONIC_TESTNET]: new Token(
+    ChainId.SONIC_TESTNET,
+    '0x591E027153ED4e536275984e1b7573367e11dac4',
+    18,
+    'WST',
+    'Wrapped Sonic'
+  ),
+  [ChainId.WORLDCHAIN]: new Token(
+    ChainId.WORLDCHAIN,
+    '0x4200000000000000000000000000000000000006',
+    18,
+    'WETH',
+    'Wrapped Ether'
+  ),
 };
 
 export class ExtendedEther extends Ether {
