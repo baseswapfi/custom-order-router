@@ -3,7 +3,16 @@ import { ChainId, CurrencyAmount as CurrencyAmountRaw, Token } from '@baseswapfi
 import { Pool } from '@baseswapfi/v3-sdk2';
 
 import { ProviderConfig } from '../../../providers/provider';
-import { USDC_BASE, USDC_MODE } from '../../../providers/token-provider';
+import {
+  DAI_ARBITRUM,
+  DAI_OPTIMISM,
+  USDC_ARBITRUM,
+  USDC_BASE,
+  USDC_MODE,
+  USDC_OPTIMISM,
+  USDT_ARBITRUM,
+  USDT_OPTIMISM,
+} from '../../../providers/token-provider';
 import { IV2PoolProvider } from '../../../providers/v2/pool-provider';
 import {
   ArbitrumGasData,
@@ -25,8 +34,8 @@ import { Pair } from '@baseswapfi/v2-sdk';
 // DAI_AVAX has 18 decimals and comes before USDC_AVAX which has 6 decimals.
 export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
   // [ChainId.MAINNET]: [DAI_MAINNET, USDC_MAINNET, USDT_MAINNET],
-  // [ChainId.ARBITRUM_ONE]: [DAI_ARBITRUM, USDC_ARBITRUM, USDT_ARBITRUM],
-  // [ChainId.OPTIMISM]: [DAI_OPTIMISM, USDC_OPTIMISM, USDT_OPTIMISM],
+  [ChainId.ARBITRUM]: [DAI_ARBITRUM, USDC_ARBITRUM, USDT_ARBITRUM],
+  [ChainId.OPTIMISM]: [DAI_OPTIMISM, USDC_OPTIMISM, USDT_OPTIMISM],
   // [ChainId.OPTIMISM_GOERLI]: [
   //   DAI_OPTIMISM_GOERLI,
   //   USDC_OPTIMISM_GOERLI,
@@ -45,6 +54,8 @@ export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
   // [ChainId.AVALANCHE]: [DAI_AVAX, USDC_AVAX],
   [ChainId.BASE]: [USDC_BASE],
   [ChainId.MODE]: [USDC_MODE],
+  // [ChainId.SONIC_TESTNET]: [USDC_SONIC_TESTNET],
+  // [ChainId.SONEIUM_TESTNET]: [USDC_SONEIUM_TESTNET],
 };
 
 export type L1ToL2GasCosts = {

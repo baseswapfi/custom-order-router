@@ -24,13 +24,12 @@ import {
   V2RouteWithValidQuote,
   V3RouteWithValidQuote,
 } from '../routers';
-import { CurrencyAmount, log, WRAPPED_NATIVE_CURRENCY } from '../util';
+import { CurrencyAmount, log, OP_STACKS_CHAINS, WRAPPED_NATIVE_CURRENCY } from '../util';
 
 import { estimateL1Gas, estimateL1GasCost } from '@eth-optimism/sdk';
 import { BaseProvider, TransactionRequest } from '@ethersproject/providers';
 import { Pair } from '@baseswapfi/v2-sdk';
 import { ProviderConfig } from '../providers/provider';
-import { opStackChains } from './l2FeeChains';
 import { buildSwapMethodParameters, buildTrade } from './methodParameters';
 
 export async function getV2NativePool(
@@ -242,7 +241,7 @@ export async function calculateGasUsed(
   let l2toL1FeeInWei = BigNumber.from(0);
   // Arbitrum charges L2 gas for L1 calldata posting costs.
   // See https://github.com/Uniswap/smart-order-router/pull/464/files#r1441376802
-  if (opStackChains.includes(chainId)) {
+  if (OP_STACKS_CHAINS.includes(chainId)) {
     l2toL1FeeInWei = (
       await calculateOptimismToL1FeeFromCalldata(
         route.methodParameters!.calldata,
@@ -489,7 +488,7 @@ export const calculateL1GasFeesHelper = async (
   let mainnetGasUsed = BigNumber.from(0);
   let mainnetFeeInWei = BigNumber.from(0);
   let gasUsedL1OnL2 = BigNumber.from(0);
-  if (opStackChains.includes(chainId)) {
+  if (OP_STACKS_CHAINS.includes(chainId)) {
     [mainnetGasUsed, mainnetFeeInWei] = await calculateOptimismToL1SecurityFee(
       route,
       swapOptions,

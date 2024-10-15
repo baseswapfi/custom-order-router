@@ -5,25 +5,30 @@ import { log, WRAPPED_NATIVE_CURRENCY } from '../util';
 
 import { ICache } from './cache';
 import {
+  DAI_OPTIMISM,
   ITokenProvider,
   TokenAccessor,
   USDC_ARBITRUM,
   USDC_BASE,
+  USDC_MODE,
   USDC_OPTIMISM,
+  USDC_SONEIUM_TESTNET,
   USDT_ARBITRUM,
+  USDT_OPTIMISM,
   WBTC_ARBITRUM,
+  WBTC_OPTIMISM,
 } from './token-provider';
 
 // These tokens will added to the Token cache on initialization.
 export const CACHE_SEED_TOKENS: {
   [chainId in ChainId]?: { [symbol: string]: Token };
 } = {
-  // [ChainId.OPTIMISM]: {
-  //   USDC: USDC_OPTIMISM,
-  //   USDT: USDT_OPTIMISM,
-  //   WBTC: WBTC_OPTIMISM,
-  //   DAI: DAI_OPTIMISM,
-  // },
+  [ChainId.OPTIMISM]: {
+    USDC: USDC_OPTIMISM,
+    USDT: USDT_OPTIMISM,
+    WBTC: WBTC_OPTIMISM,
+    DAI: DAI_OPTIMISM,
+  },
   // [ChainId.OPTIMISM_GOERLI]: {
   //   USDC: USDC_OPTIMISM_GOERLI,
   //   USDT: USDT_OPTIMISM_GOERLI,
@@ -56,7 +61,20 @@ export const CACHE_SEED_TOKENS: {
   // [ChainId.ZKSYNC]: {
   //   WETH: WRAPPED_NATIVE_CURRENCY[ChainId.ZKSYNC],
   // },
-  // Currently we do not have providers for Moonbeam mainnet or Gnosis testnet
+  [ChainId.MODE]: {
+    USDC: USDC_MODE,
+    WETH: WRAPPED_NATIVE_CURRENCY[ChainId.MODE],
+  },
+
+  // [ChainId.SONIC_TESTNET]: {
+  //   USDC: USDC_SONIC_TESTNET,
+  //   WETH: WRAPPED_NATIVE_CURRENCY[ChainId.SONIC_TESTNET],
+  // },
+
+  [ChainId.SONEIUM_TESTNET]: {
+    USDC: USDC_SONEIUM_TESTNET,
+    WETH: WRAPPED_NATIVE_CURRENCY[ChainId.SONEIUM_TESTNET],
+  },
 };
 
 /**

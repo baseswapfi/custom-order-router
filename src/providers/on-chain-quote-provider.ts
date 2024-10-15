@@ -22,7 +22,7 @@ import {
   ID_TO_NETWORK_NAME,
   metric,
   MetricLoggerUnit,
-  NEW_QUOTER_V2_ADDRESSES,
+  // NEW_QUOTER_V2_ADDRESSES,
   // PROTOCOL_V4_QUOTER_ADDRESSES,
 } from '../util';
 import { CurrencyAmount } from '../util/amounts';
@@ -458,20 +458,20 @@ export class OnChainQuoteProvider implements IOnChainQuoteProvider {
   //   return path;
   // }
 
-  private getContractInterface(useMixedRouteQuoter: boolean, protocol: Protocol): Interface {
-    if (useMixedRouteQuoter) {
-      return IMixedRouteQuoterV1__factory.createInterface();
-    }
+  // private getContractInterface(useMixedRouteQuoter: boolean, protocol: Protocol): Interface {
+  //   if (useMixedRouteQuoter) {
+  //     return IMixedRouteQuoterV1__factory.createInterface();
+  //   }
 
-    switch (protocol) {
-      case Protocol.V3:
-        return IQuoterV2__factory.createInterface();
-      // case Protocol.V4:
-      //   return V4Quoter__factory.createInterface();
-      default:
-        throw new Error(`Unsupported protocol: ${protocol}`);
-    }
-  }
+  //   switch (protocol) {
+  //     case Protocol.V3:
+  //       return IQuoterV2__factory.createInterface();
+  //     // case Protocol.V4:
+  //     //   return V4Quoter__factory.createInterface();
+  //     default:
+  //       throw new Error(`Unsupported protocol: ${protocol}`);
+  //   }
+  // }
 
   private async consolidateResults(
     protocol: Protocol,

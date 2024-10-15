@@ -31,25 +31,29 @@ const FEE_DETECTOR_ADDRESS = (chainId: ChainId) => {
   switch (chainId) {
     // case ChainId.MAINNET:
     //   return '0xbc708B192552e19A088b4C4B8772aEeA83bCf760';
-    // case ChainId.OPTIMISM:
-    //   return '0x95aDC98A949dCD94645A8cD56830D86e4Cf34Eff';
+    case ChainId.OPTIMISM:
+      return '0x96F701640Ff6f1f7541bb9647BFB8c2E0e0d33B0';
     // case ChainId.BNB:
     //   return '0xCF6220e4496B091a6b391D48e770f1FbaC63E740';
     // case ChainId.POLYGON:
     //   return '0xC988e19819a63C0e487c6Ad8d6668Ac773923BF2';
     case ChainId.BASE:
-      return '0xCF6220e4496B091a6b391D48e770f1FbaC63E740';
-    // case ChainId.MODE:
-    //     return '';
-    // case ChainId.ARBITRUM_ONE:
-    //   return '0x37324D81e318260DC4f0fCb68035028eFdE6F50e';
+      return '0x45ede445bf511f14cc4809d81355d4dbf8d97847';
+    case ChainId.MODE:
+      return '0xc09BF50ac5774f0F1a2406a2D08713683a2Bd3b9';
+    case ChainId.ARBITRUM:
+      return '0x1222766DA7a1CbCD8451dF214dcD41579a9fb60E';
     // case ChainId.CELO:
     //   return '0x8eEa35913DdeD795001562f9bA5b282d3ac04B60';
     // case ChainId.AVALANCHE:
     //   return '0x8269d47c4910B8c87789aA0eC128C11A8614dfC8';
+    case ChainId.SONIC_TESTNET:
+      return '';
+    case ChainId.SONEIUM_TESTNET:
+      return '0xc1e624C810D297FD70eF53B0E08F44FABE468591';
     default:
-      // just default to mainnet contract
-      return '0xCF6220e4496B091a6b391D48e770f1FbaC63E740';
+      // just default to base contract
+      return '0x45ede445bf511f14cc4809d81355d4dbf8d97847';
   }
 };
 

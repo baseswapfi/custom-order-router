@@ -1,10 +1,21 @@
 import { ChainId, Ether, NativeCurrency, Token } from '@baseswapfi/sdk-core';
 
-export const SUPPORTED_CHAINS: ChainId[] = [ChainId.BASE, ChainId.BASE_GOERLI, ChainId.MODE];
+export const OP_STACKS_CHAINS = [
+  ChainId.BASE,
+  ChainId.BASE_GOERLI,
+  ChainId.MODE,
+  ChainId.OPTIMISM,
+  ChainId.SONEIUM_TESTNET,
+];
+export const SUPPORTED_CHAINS: ChainId[] = [
+  ...OP_STACKS_CHAINS,
+  ChainId.ARBITRUM,
+  ChainId.SONIC_TESTNET,
+];
 
-export const V2_SUPPORTED = [ChainId.BASE, ChainId.BASE_GOERLI, ChainId.MODE];
+export const V2_SUPPORTED = [...OP_STACKS_CHAINS, ChainId.SONIC_TESTNET];
 
-export const HAS_L1_FEE = [ChainId.BASE, ChainId.BASE_GOERLI, ChainId.MODE];
+export const HAS_L1_FEE = [...OP_STACKS_CHAINS, ChainId.ARBITRUM];
 
 export const ID_TO_CHAIN_ID = (id: number): ChainId => {
   switch (id) {
@@ -22,8 +33,8 @@ export const ID_TO_CHAIN_ID = (id: number): ChainId => {
     //   return ChainId.OPTIMISM_GOERLI;
     // case 11155420:
     //   return ChainId.OPTIMISM_SEPOLIA;
-    // case 42161:
-    //   return ChainId.ARBITRUM_ONE;
+    case 42161:
+      return ChainId.ARBITRUM;
     // case 421613:
     //   return ChainId.ARBITRUM_GOERLI;
     // case 421614:
@@ -52,6 +63,10 @@ export const ID_TO_CHAIN_ID = (id: number): ChainId => {
     //   return ChainId.ZORA;
     // case 324:
     //   return ChainId.ZKSYNC;
+    case 1946:
+      return ChainId.SONEIUM_TESTNET;
+    case 64165:
+      return ChainId.SONIC_TESTNET;
     default:
       throw new Error(`Unknown chain id: ${id}`);
   }
@@ -82,6 +97,8 @@ export enum ChainName {
   BLAST = 'blast-mainnet',
   ZORA = 'zora-mainnet',
   ZKSYNC = 'zksync-mainnet',
+  SONIC_TESTNET = 'sonic-testnet',
+  SONEIUM_TESTNET = 'soneium-testnet',
 }
 
 export enum NativeCurrencyName {
@@ -93,6 +110,7 @@ export enum NativeCurrencyName {
   MOONBEAM = 'GLMR',
   BNB = 'BNB',
   AVALANCHE = 'AVAX',
+  S = 'S',
 }
 
 export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
@@ -165,6 +183,8 @@ export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
   //   'ETHER',
   //   '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
   // ],
+  [ChainId.SONIC_TESTNET]: ['S', 'Sonic', '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'],
+  [ChainId.SONEIUM_TESTNET]: ['ETH', 'ETHER', '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'],
 };
 
 export const NATIVE_CURRENCY: { [chainId: number]: NativeCurrencyName } = {
@@ -190,6 +210,8 @@ export const NATIVE_CURRENCY: { [chainId: number]: NativeCurrencyName } = {
   // [ChainId.BLAST]: NativeCurrencyName.ETHER,
   // [ChainId.ZORA]: NativeCurrencyName.ETHER,
   // [ChainId.ZKSYNC]: NativeCurrencyName.ETHER,
+  [ChainId.SONIC_TESTNET]: NativeCurrencyName.S,
+  [ChainId.SONEIUM_TESTNET]: NativeCurrencyName.ETHER,
 };
 
 export const ID_TO_NETWORK_NAME = (id: number): ChainName => {
@@ -246,6 +268,10 @@ export const ID_TO_NETWORK_NAME = (id: number): ChainName => {
       return ChainName.MODE;
     case 919:
       return ChainName.MODE_TESTNET;
+    case 1946:
+      return ChainName.SONEIUM_TESTNET;
+    case 64165:
+      return ChainName.SONIC_TESTNET;
     default:
       throw new Error(`Unknown chain id: ${id}`);
   }

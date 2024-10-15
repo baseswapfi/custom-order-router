@@ -199,6 +199,8 @@ const baseTokensByChain: { [chainId in ChainId]?: Token[] } = {
   // [ChainId.BLAST]: [WRAPPED_NATIVE_CURRENCY[ChainId.BLAST]!, USDB_BLAST],
   // [ChainId.ZORA]: [WRAPPED_NATIVE_CURRENCY[ChainId.ZORA]!],
   // [ChainId.ZKSYNC]: [WRAPPED_NATIVE_CURRENCY[ChainId.ZKSYNC]!],
+  [ChainId.SONIC_TESTNET]: [],
+  [ChainId.SONEIUM_TESTNET]: [USDC_MODE, USDT_MODE, DAI_MODE, WBTC_MODE],
 };
 
 class SubcategorySelectionPools<SubgraphPool> {

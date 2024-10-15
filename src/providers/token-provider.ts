@@ -207,6 +207,24 @@ export const WBTC_MODE = new Token(
   'Wrapped BTC'
 );
 
+// Sonic testnet
+
+export const USDC_SONEIUM_TESTNET = new Token(
+  ChainId.SONEIUM_TESTNET,
+  '0xE9A198d38483aD727ABC8b0B1e16B2d338CF0391',
+  6,
+  'USDC',
+  'USDC'
+);
+
+export const wstETH_SONEIUM_TESTNET = new Token(
+  ChainId.SONEIUM_TESTNET,
+  '0x5717D6A621aA104b0b4cAd32BFe6AD3b659f269E',
+  18,
+  'wstETH',
+  'Wrapped Staked Ether'
+);
+
 export class TokenProvider implements ITokenProvider {
   constructor(private chainId: ChainId, protected multicall2Provider: IMulticallProvider) {}
 
