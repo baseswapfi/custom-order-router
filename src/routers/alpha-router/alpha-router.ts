@@ -48,6 +48,8 @@ import {
   ITokenValidatorProvider,
   TokenList,
   Simulator,
+  StaticV2SubgraphProvider,
+  CachingV2SubgraphProvider,
 } from '../../providers';
 
 import { GasPrice, IGasPriceProvider } from '../../providers/gas-price-provider';
@@ -732,9 +734,14 @@ export class AlphaRouter
       );
 
     this.portionProvider = portionProvider ?? new PortionProvider();
-    this.v2SubgraphProvider = v2SubgraphProvider;
-    // // const chainName = ID_TO_NETWORK_NAME(chainId);
-    // // ipfs urls in the following format: `https://cloudflare-ipfs.com/ipns/api.uniswap.org/v1/pools/${protocol}/${chainName}.json`;
+    this.v2SubgraphProvider =
+      v2SubgraphProvider ??
+      new CachingV2SubgraphProvider(
+        chainId,
+        new StaticV2SubgraphProvider(chainId),
+        new NodeJSCache(new NodeCache({ stdTTL: 300, useClones: false }))
+      );
+
     // if (v2SubgraphProvider) {
     //   this.v2SubgraphProvider = v2SubgraphProvider;
     // } else {
