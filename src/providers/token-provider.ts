@@ -112,6 +112,8 @@ export const cbBTC_BASE = new Token(
   'Coinbase Bitcoin'
 );
 
+export const USDT_BASE = new Token(ChainId.MODE, '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', 6, 'USDT', 'Tether USD');
+
 export const DAI_BASE = new Token(
   ChainId.BASE,
   '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
@@ -178,20 +180,8 @@ export const USDC_NATIVE_ARBITRUM = new Token(
 
 // MODE
 
-export const USDC_MODE = new Token(
-  ChainId.MODE,
-  '0xd988097fb8612cc24eeC14542bC03424c656005f',
-  6,
-  'USDC',
-  'USDC'
-);
-export const USDT_MODE = new Token(
-  ChainId.MODE,
-  '0xf0F161fDA2712DB8b566946122a5af183995e2eD',
-  6,
-  'USDT',
-  'Tether USD'
-);
+export const USDC_MODE = new Token(ChainId.MODE, '0xd988097fb8612cc24eeC14542bC03424c656005f', 6, 'USDC', 'USDC');
+export const USDT_MODE = new Token(ChainId.MODE, '0xf0F161fDA2712DB8b566946122a5af183995e2eD', 6, 'USDT', 'Tether USD');
 export const DAI_MODE = new Token(
   ChainId.MODE,
   '0xE7798f023fC62146e8Aa1b36Da45fb70855a77Ea',
@@ -242,20 +232,14 @@ export class TokenProvider implements ITokenProvider {
     let isBytes32 = false;
 
     try {
-      result = await this.multicall2Provider.callSameFunctionOnMultipleContracts<
-        undefined,
-        [string]
-      >({
+      result = await this.multicall2Provider.callSameFunctionOnMultipleContracts<undefined, [string]>({
         addresses,
         contractInterface: IERC20Metadata__factory.createInterface(),
         functionName: 'symbol',
         providerConfig,
       });
     } catch (error) {
-      log.error(
-        { addresses },
-        `TokenProvider.getTokenSymbol[string] failed with error ${error}. Trying with bytes32.`
-      );
+      log.error({ addresses }, `TokenProvider.getTokenSymbol[string] failed with error ${error}. Trying with bytes32.`);
 
       const bytes32Interface = new Interface([
         {
@@ -274,10 +258,7 @@ export class TokenProvider implements ITokenProvider {
       ]);
 
       try {
-        result = await this.multicall2Provider.callSameFunctionOnMultipleContracts<
-          undefined,
-          [string]
-        >({
+        result = await this.multicall2Provider.callSameFunctionOnMultipleContracts<undefined, [string]>({
           addresses,
           contractInterface: bytes32Interface,
           functionName: 'symbol',
@@ -285,10 +266,7 @@ export class TokenProvider implements ITokenProvider {
         });
         isBytes32 = true;
       } catch (error) {
-        log.fatal(
-          { addresses },
-          `TokenProvider.getTokenSymbol[bytes32] failed with error ${error}.`
-        );
+        log.fatal({ addresses }, `TokenProvider.getTokenSymbol[bytes32] failed with error ${error}.`);
 
         throw new Error('[TokenProvider.getTokenSymbol] Impossible to fetch token symbol.');
       }
@@ -306,10 +284,7 @@ export class TokenProvider implements ITokenProvider {
     });
   }
 
-  public async getTokens(
-    _addresses: string[],
-    providerConfig?: ProviderConfig
-  ): Promise<TokenAccessor> {
+  public async getTokens(_addresses: string[], providerConfig?: ProviderConfig): Promise<TokenAccessor> {
     const addressToToken: { [address: string]: Token } = {};
     const symbolToToken: { [symbol: string]: Token } = {};
 
@@ -345,9 +320,7 @@ export class TokenProvider implements ITokenProvider {
           continue;
         }
 
-        const symbol = isBytes32
-          ? parseBytes32String(symbolResult.result[0]!)
-          : symbolResult.result[0]!;
+        const symbol = isBytes32 ? parseBytes32String(symbolResult.result[0]!) : symbolResult.result[0]!;
         const decimal = decimalResult.result[0]!;
 
         addressToToken[address.toLowerCase()] = new Token(this.chainId, address, decimal, symbol);
