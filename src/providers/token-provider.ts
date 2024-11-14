@@ -354,6 +354,10 @@ export const DAI_ON = (chainId: ChainId): Token => {
       return DAI_BASE;
     case ChainId.MODE:
       return DAI_MODE;
+    case ChainId.OPTIMISM:
+      return DAI_OPTIMISM;
+    case ChainId.ARBITRUM:
+      return DAI_ARBITRUM;
     default:
       throw new Error(`Chain id: ${chainId} not supported`);
   }
@@ -361,8 +365,15 @@ export const DAI_ON = (chainId: ChainId): Token => {
 
 export const USDT_ON = (chainId: ChainId): Token => {
   switch (chainId) {
+    case ChainId.BASE:
+      return USDT_BASE;
     case ChainId.MODE:
       return USDT_MODE;
+    case ChainId.OPTIMISM:
+      return USDT_OPTIMISM;
+    case ChainId.ARBITRUM:
+      return USDT_ARBITRUM;
+
     default:
       throw new Error(`Chain id: ${chainId} not supported`);
   }
@@ -376,6 +387,13 @@ export const USDC_ON = (chainId: ChainId): Token => {
       return USDC_BASE_GOERLI;
     case ChainId.MODE:
       return USDC_MODE;
+    case ChainId.OPTIMISM:
+      return USDC_NATIVE_OPTIMISM;
+    case ChainId.ARBITRUM:
+      return USDC_ARBITRUM;
+
+    case ChainId.SONEIUM_TESTNET:
+      return USDC_SONEIUM_TESTNET;
     default:
       throw new Error(`Chain id: ${chainId} not supported`);
   }
