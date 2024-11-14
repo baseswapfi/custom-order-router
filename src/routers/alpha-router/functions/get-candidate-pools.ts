@@ -20,6 +20,7 @@ import {
   USDC_MODE,
   USDC_NATIVE_BASE,
   USDC_OPTIMISM,
+  USDC_SONEIUM_TESTNET,
   USDT_ARBITRUM,
   USDT_BASE,
   USDT_MODE,
@@ -31,6 +32,7 @@ import {
   WBTC_ARBITRUM,
   WBTC_MODE,
   WBTC_OPTIMISM,
+  WBTC_SONEIUM_TESTNET,
 } from '../../../providers';
 import { metric, MetricLoggerUnit } from '../../../util/metric';
 import { log } from '../../../util/log';
@@ -201,7 +203,7 @@ const baseTokensByChain: { [chainId in ChainId]?: Token[] } = {
   // [ChainId.ZORA]: [WRAPPED_NATIVE_CURRENCY[ChainId.ZORA]!],
   // [ChainId.ZKSYNC]: [WRAPPED_NATIVE_CURRENCY[ChainId.ZKSYNC]!],
   [ChainId.SONIC_TESTNET]: [],
-  [ChainId.SONEIUM_TESTNET]: [USDC_MODE, USDT_MODE, DAI_MODE, WBTC_MODE],
+  [ChainId.SONEIUM_TESTNET]: [USDC_SONEIUM_TESTNET, USDC_SONEIUM_TESTNET, WBTC_SONEIUM_TESTNET],
 };
 
 class SubcategorySelectionPools<SubgraphPool> {

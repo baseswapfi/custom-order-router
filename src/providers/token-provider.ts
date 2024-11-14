@@ -207,12 +207,28 @@ export const USDC_SONEIUM_TESTNET = new Token(
   'USDC'
 );
 
+export const USDT_SONEIUM_TESTNET = new Token(
+  ChainId.SONEIUM_TESTNET,
+  '0xE4c743036C74026649C9Dc1b8C2Abb028BBf4C14',
+  6,
+  'USDT',
+  'Tether USD'
+);
+
 export const wstETH_SONEIUM_TESTNET = new Token(
   ChainId.SONEIUM_TESTNET,
   '0x5717D6A621aA104b0b4cAd32BFe6AD3b659f269E',
   18,
   'wstETH',
   'Wrapped Staked Ether'
+);
+
+export const WBTC_SONEIUM_TESTNET = new Token(
+  ChainId.SONEIUM_TESTNET,
+  '0x32b8254f669a5fa56fd4acfa141ed7243eb767b5',
+  8,
+  'WBTC',
+  'Wrapped BTC'
 );
 
 export class TokenProvider implements ITokenProvider {
