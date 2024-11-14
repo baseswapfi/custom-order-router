@@ -197,7 +197,7 @@ export const WBTC_MODE = new Token(
   'Wrapped BTC'
 );
 
-// Sonic testnet
+// Soneium testnet
 
 export const USDC_SONEIUM_TESTNET = new Token(
   ChainId.SONEIUM_TESTNET,
