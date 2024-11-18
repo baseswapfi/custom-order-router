@@ -12,6 +12,7 @@ import {
   // CEUR_CELO,
   // CUSD_CELO,
   DAI_ARBITRUM,
+  DAI_BASE,
   DAI_MODE,
   // DAI_AVAX,
   // DAI_BNB,
@@ -36,6 +37,7 @@ import {
   // USDC_POLYGON,
   // USDC_ZKSYNC,
   USDT_ARBITRUM,
+  USDT_BASE,
   // USDT_BNB,
   // USDT_MAINNET,
   USDT_OPTIMISM,
@@ -56,17 +58,6 @@ type ChainTokenList = {
 };
 
 const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
-  // [ChainId.MAINNET]: [
-  //   WRAPPED_NATIVE_CURRENCY[ChainId.MAINNET]!,
-  //   DAI_MAINNET,
-  //   USDC_MAINNET,
-  //   USDT_MAINNET,
-  //   WBTC_MAINNET,
-  //   WSTETH_MAINNET,
-  // ],
-  // [ChainId.GOERLI]: [WRAPPED_NATIVE_CURRENCY[ChainId.GOERLI]!],
-  // [ChainId.SEPOLIA]: [WRAPPED_NATIVE_CURRENCY[ChainId.SEPOLIA]!],
-  // //v2 not deployed on [arbitrum, polygon, celo, gnosis, moonbeam, bnb, avalanche] and their testnets
   [ChainId.OPTIMISM]: [
     WRAPPED_NATIVE_CURRENCY[ChainId.OPTIMISM]!,
     USDC_OPTIMISM,
@@ -84,44 +75,10 @@ const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
     USDT_ARBITRUM,
     ARB_ARBITRUM,
   ],
-  // [ChainId.ARBITRUM_GOERLI]: [],
-  // [ChainId.ARBITRUM_SEPOLIA]: [],
-  // [ChainId.OPTIMISM_GOERLI]: [],
-  // [ChainId.OPTIMISM_SEPOLIA]: [],
-  // [ChainId.POLYGON]: [USDC_POLYGON, WETH_POLYGON, WMATIC_POLYGON],
-  // [ChainId.POLYGON_MUMBAI]: [],
-  // [ChainId.CELO]: [CELO, CUSD_CELO, CEUR_CELO, DAI_CELO],
-  // [ChainId.CELO_ALFAJORES]: [],
-  // [ChainId.GNOSIS]: [],
-  // [ChainId.MOONBEAM]: [
-  //   WRAPPED_NATIVE_CURRENCY[ChainId.MOONBEAM],
-  //   DAI_MOONBEAM,
-  //   USDC_MOONBEAM,
-  //   WBTC_MOONBEAM,
-  // ],
-  // [ChainId.BNB]: [
-  //   WRAPPED_NATIVE_CURRENCY[ChainId.BNB],
-  //   BUSD_BNB,
-  //   DAI_BNB,
-  //   USDC_BNB,
-  //   USDT_BNB,
-  //   BTC_BNB,
-  //   ETH_BNB,
-  // ],
-  // [ChainId.AVALANCHE]: [WRAPPED_NATIVE_CURRENCY[ChainId.AVALANCHE], USDC_AVAX, DAI_AVAX],
-  // [ChainId.BASE_GOERLI]: [],
-  [ChainId.BASE]: [WRAPPED_NATIVE_CURRENCY[ChainId.BASE], USDC_BASE],
+  [ChainId.BASE]: [WRAPPED_NATIVE_CURRENCY[ChainId.BASE], USDC_BASE, USDT_BASE, DAI_BASE],
   [ChainId.MODE]: [WRAPPED_NATIVE_CURRENCY[ChainId.MODE], USDC_MODE, DAI_MODE, WBTC_MODE],
   // [ChainId.SONIC_TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.SONIC_TESTNET]],
-  [ChainId.SONEIUM_TESTNET]: [
-    WRAPPED_NATIVE_CURRENCY[ChainId.SONEIUM_TESTNET],
-    USDC_SONEIUM_TESTNET,
-  ],
-  // [ChainId.ZORA]: [WRAPPED_NATIVE_CURRENCY[ChainId.ZORA]!],
-  // [ChainId.ZORA_SEPOLIA]: [WRAPPED_NATIVE_CURRENCY[ChainId.ZORA_SEPOLIA]!],
-  // [ChainId.ROOTSTOCK]: [WRAPPED_NATIVE_CURRENCY[ChainId.ROOTSTOCK]!],
-  // [ChainId.BLAST]: [WRAPPED_NATIVE_CURRENCY[ChainId.BLAST]!, USDB_BLAST],
-  // [ChainId.ZKSYNC]: [WRAPPED_NATIVE_CURRENCY[ChainId.ZKSYNC]!, USDCE_ZKSYNC, USDC_ZKSYNC],
+  [ChainId.SONEIUM_TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.SONEIUM_TESTNET], USDC_SONEIUM_TESTNET],
 };
 
 /**
@@ -144,9 +101,7 @@ export class StaticV2SubgraphProvider implements IV2SubgraphProvider {
     const bases = BASES_TO_CHECK_TRADES_AGAINST[this.chainId];
 
     if (!bases) {
-      throw new Error(
-        `StaticV2SubgraphProvider: Missing BASES_TO_CHECK_TRADES_AGAINST for chainId: ${this.chainId}`
-      );
+      throw new Error(`StaticV2SubgraphProvider: Missing BASES_TO_CHECK_TRADES_AGAINST for chainId: ${this.chainId}`);
     }
 
     const basePairs: [Token, Token][] = _.flatMap(bases, (base): [Token, Token][] =>
