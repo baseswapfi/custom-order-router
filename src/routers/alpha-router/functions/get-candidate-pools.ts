@@ -38,6 +38,7 @@ import { metric, MetricLoggerUnit } from '../../../util/metric';
 import { log } from '../../../util/log';
 import { AlphaRouterConfig } from '../alpha-router';
 import { parseFeeAmount, unparseFeeAmount, WRAPPED_NATIVE_CURRENCY } from '../../../util';
+import { FEE_TIERS } from '../../../providers/v3/fee-tiers';
 
 export type PoolId = { id: string };
 export type SubgraphPool = V2SubgraphPool | V3SubgraphPool;
@@ -300,6 +301,8 @@ export async function getV3CandidatePools({
   const baseTokens = baseTokensByChain[chainId] ?? [];
   // const baseTokens = [USDC_BASE, USDC_NATIVE_BASE, DAI_BASE, cbBTC_BASE];
 
+  log.info(`baseTokens: CHAIN_ID = ${chainId}`, baseTokens);
+
   const topByBaseWithTokenIn = _(baseTokens)
     .flatMap((token: Token) => {
       return _(subgraphPoolsSorted)
@@ -351,25 +354,22 @@ export async function getV3CandidatePools({
     // If we requested direct swap pools but did not find any in the subgraph query.
     // Optimistically add them into the query regardless. Invalid pools ones will be dropped anyway
     // when we query the pool on-chain. Ensures that new pools for new pairs can be swapped on immediately.
-    top2DirectSwapPool = _.map(
-      [FeeAmount.HIGH, FeeAmount.MEDIUM, FeeAmount.LOW, FeeAmount.LOWER, FeeAmount.LOWEST],
-      (feeAmount) => {
-        const { token0, token1, poolAddress } = poolProvider.getPoolAddress(tokenIn, tokenOut, feeAmount);
-        return {
-          id: poolAddress,
-          feeTier: unparseFeeAmount(feeAmount),
-          liquidity: '10000',
-          token0: {
-            id: token0.address,
-          },
-          token1: {
-            id: token1.address,
-          },
-          tvlETH: 10000,
-          tvlUSD: 10000,
-        };
-      }
-    );
+    top2DirectSwapPool = _.map(FEE_TIERS, (feeAmount) => {
+      const { token0, token1, poolAddress } = poolProvider.getPoolAddress(tokenIn, tokenOut, feeAmount);
+      return {
+        id: poolAddress,
+        feeTier: unparseFeeAmount(feeAmount),
+        liquidity: '1000',
+        token0: {
+          id: token0.address,
+        },
+        token1: {
+          id: token1.address,
+        },
+        tvlETH: 1000,
+        tvlUSD: 1000,
+      };
+    });
   }
 
   addToAddressSet(top2DirectSwapPool);
@@ -380,33 +380,35 @@ export async function getV3CandidatePools({
   // We don't check the seen address set because if we've already added pools for getting native quotes
   // theres no need to add more.
   let top2EthQuoteTokenPool: V3SubgraphPool[] = [];
-  if (
-    WRAPPED_NATIVE_CURRENCY[chainId]?.symbol == WRAPPED_NATIVE_CURRENCY[1 as ChainId]?.symbol &&
-    tokenOut.symbol != 'WETH' &&
-    tokenOut.symbol != 'WETH9' &&
-    tokenOut.symbol != 'ETH'
-    //   ||
-    // (WRAPPED_NATIVE_CURRENCY[chainId]?.symbol == WMATIC_POLYGON.symbol &&
-    //   tokenOut.symbol != 'MATIC' &&
-    //   tokenOut.symbol != 'WMATIC')
-  ) {
-    top2EthQuoteTokenPool = _(subgraphPoolsSorted)
-      .filter((subgraphPool) => {
-        if (routeType == TradeType.EXACT_INPUT) {
-          return (
-            (subgraphPool.token0.id == wrappedNativeAddress && subgraphPool.token1.id == tokenOutAddress) ||
-            (subgraphPool.token1.id == wrappedNativeAddress && subgraphPool.token0.id == tokenOutAddress)
-          );
-        } else {
-          return (
-            (subgraphPool.token0.id == wrappedNativeAddress && subgraphPool.token1.id == tokenInAddress) ||
-            (subgraphPool.token1.id == wrappedNativeAddress && subgraphPool.token0.id == tokenInAddress)
-          );
-        }
-      })
-      .slice(0, 1)
-      .value();
-  }
+
+  // @note Doesn't seem to apply to us
+  // if (
+  //   WRAPPED_NATIVE_CURRENCY[chainId]?.symbol == WRAPPED_NATIVE_CURRENCY[1 as ChainId]?.symbol &&
+  //   tokenOut.symbol != 'WETH' &&
+  //   tokenOut.symbol != 'WETH9' &&
+  //   tokenOut.symbol != 'ETH'
+  //   //   ||
+  //   // (WRAPPED_NATIVE_CURRENCY[chainId]?.symbol == WMATIC_POLYGON.symbol &&
+  //   //   tokenOut.symbol != 'MATIC' &&
+  //   //   tokenOut.symbol != 'WMATIC')
+  // ) {
+  //   top2EthQuoteTokenPool = _(subgraphPoolsSorted)
+  //     .filter((subgraphPool) => {
+  //       if (routeType == TradeType.EXACT_INPUT) {
+  //         return (
+  //           (subgraphPool.token0.id == wrappedNativeAddress && subgraphPool.token1.id == tokenOutAddress) ||
+  //           (subgraphPool.token1.id == wrappedNativeAddress && subgraphPool.token0.id == tokenOutAddress)
+  //         );
+  //       } else {
+  //         return (
+  //           (subgraphPool.token0.id == wrappedNativeAddress && subgraphPool.token1.id == tokenInAddress) ||
+  //           (subgraphPool.token1.id == wrappedNativeAddress && subgraphPool.token0.id == tokenInAddress)
+  //         );
+  //       }
+  //     })
+  //     .slice(0, 1)
+  //     .value();
+  // }
 
   addToAddressSet(top2EthQuoteTokenPool);
 

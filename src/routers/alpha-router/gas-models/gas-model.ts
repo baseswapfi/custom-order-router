@@ -5,20 +5,24 @@ import { Pool } from '@baseswapfi/v3-sdk2';
 import { ProviderConfig } from '../../../providers/provider';
 import {
   DAI_ARBITRUM,
+  DAI_BASE,
+  DAI_MODE,
   DAI_OPTIMISM,
   USDC_ARBITRUM,
   USDC_BASE,
   USDC_MODE,
+  USDC_NATIVE_ARBITRUM,
+  USDC_NATIVE_BASE,
+  USDC_NATIVE_OPTIMISM,
   USDC_OPTIMISM,
+  USDC_SONEIUM_TESTNET,
   USDT_ARBITRUM,
+  USDT_BASE,
+  USDT_MODE,
   USDT_OPTIMISM,
 } from '../../../providers/token-provider';
 import { IV2PoolProvider } from '../../../providers/v2/pool-provider';
-import {
-  ArbitrumGasData,
-  IL2GasDataProvider,
-  OptimismGasData,
-} from '../../../providers/v3/gas-data-provider';
+import { ArbitrumGasData, IL2GasDataProvider, OptimismGasData } from '../../../providers/v3/gas-data-provider';
 import { CurrencyAmount } from '../../../util/amounts';
 import {
   MixedRouteWithValidQuote,
@@ -29,33 +33,16 @@ import {
 import { WRAPPED_NATIVE_CURRENCY } from '../../../util';
 import { Pair } from '@baseswapfi/v2-sdk';
 
-// When adding new usd gas tokens, ensure the tokens are ordered
+// @note When adding new usd gas tokens, ensure the tokens are ordered
 // from tokens with highest decimals to lowest decimals. For example,
 // DAI_AVAX has 18 decimals and comes before USDC_AVAX which has 6 decimals.
 export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
-  // [ChainId.MAINNET]: [DAI_MAINNET, USDC_MAINNET, USDT_MAINNET],
-  [ChainId.ARBITRUM]: [DAI_ARBITRUM, USDC_ARBITRUM, USDT_ARBITRUM],
-  [ChainId.OPTIMISM]: [DAI_OPTIMISM, USDC_OPTIMISM, USDT_OPTIMISM],
-  // [ChainId.OPTIMISM_GOERLI]: [
-  //   DAI_OPTIMISM_GOERLI,
-  //   USDC_OPTIMISM_GOERLI,
-  //   USDT_OPTIMISM_GOERLI,
-  // ],
-  // [ChainId.ARBITRUM_GOERLI]: [USDC_ARBITRUM_GOERLI],
-  // [ChainId.GOERLI]: [DAI_GOERLI, USDC_GOERLI, USDT_GOERLI, WBTC_GOERLI],
-  // [ChainId.SEPOLIA]: [USDC_SEPOLIA, DAI_SEPOLIA],
-  // [ChainId.POLYGON]: [USDC_POLYGON],
-  // [ChainId.POLYGON_MUMBAI]: [DAI_POLYGON_MUMBAI],
-  // [ChainId.CELO]: [CUSD_CELO],
-  // [ChainId.CELO_ALFAJORES]: [CUSD_CELO_ALFAJORES],
-  // [ChainId.GNOSIS]: [USDC_ETHEREUM_GNOSIS],
-  // [ChainId.MOONBEAM]: [USDC_MOONBEAM],
-  // [ChainId.BNB]: [USDT_BNB, USDC_BNB, DAI_BNB],
-  // [ChainId.AVALANCHE]: [DAI_AVAX, USDC_AVAX],
-  [ChainId.BASE]: [USDC_BASE],
-  [ChainId.MODE]: [USDC_MODE],
+  [ChainId.ARBITRUM]: [DAI_ARBITRUM, USDC_ARBITRUM, USDT_ARBITRUM, USDC_NATIVE_ARBITRUM],
+  [ChainId.OPTIMISM]: [DAI_OPTIMISM, USDC_OPTIMISM, USDT_OPTIMISM, USDC_NATIVE_OPTIMISM],
+  [ChainId.BASE]: [DAI_BASE, USDC_BASE, USDT_BASE, USDC_NATIVE_BASE],
+  [ChainId.MODE]: [DAI_MODE, USDC_MODE, USDT_MODE],
   // [ChainId.SONIC_TESTNET]: [USDC_SONIC_TESTNET],
-  // [ChainId.SONEIUM_TESTNET]: [USDC_SONEIUM_TESTNET],
+  [ChainId.SONEIUM_TESTNET]: [USDC_SONEIUM_TESTNET],
 };
 
 export type L1ToL2GasCosts = {

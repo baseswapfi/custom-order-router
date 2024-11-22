@@ -31,6 +31,7 @@ import { BaseProvider, TransactionRequest } from '@ethersproject/providers';
 import { Pair } from '@baseswapfi/v2-sdk';
 import { ProviderConfig } from '../providers/provider';
 import { buildSwapMethodParameters, buildTrade } from './methodParameters';
+import { FEE_TIERS } from '../providers/v3/fee-tiers';
 
 export async function getV2NativePool(
   token: Token,
@@ -67,7 +68,7 @@ export async function getHighestLiquidityV3NativePool(
 ): Promise<Pool | null> {
   const nativeCurrency = WRAPPED_NATIVE_CURRENCY[token.chainId as ChainId]!;
 
-  const nativePools = _([FeeAmount.HIGH, FeeAmount.MEDIUM, FeeAmount.LOW, FeeAmount.LOWEST])
+  const nativePools = _(FEE_TIERS)
     .map<[Token, Token, FeeAmount]>((feeAmount) => {
       return [nativeCurrency, token, feeAmount];
     })
@@ -75,7 +76,7 @@ export async function getHighestLiquidityV3NativePool(
 
   const poolAccessor = await poolProvider.getPools(nativePools, providerConfig);
 
-  const pools = _([FeeAmount.HIGH, FeeAmount.MEDIUM, FeeAmount.LOW, FeeAmount.LOWEST])
+  const pools = _(FEE_TIERS)
     .map((feeAmount) => {
       return poolAccessor.getPool(nativeCurrency, token, feeAmount);
     })
@@ -90,6 +91,8 @@ export async function getHighestLiquidityV3NativePool(
 
     return null;
   }
+
+  console.log('pools', pools);
 
   const maxPool = pools.reduce((prev, current) => {
     return JSBI.greaterThan(prev.liquidity, current.liquidity) ? prev : current;
@@ -110,25 +113,17 @@ export async function getHighestLiquidityV3USDPool(
     throw new Error(`Could not find a USD token for computing gas costs on ${chainId}`);
   }
 
-  const usdPools = _([FeeAmount.HIGH, FeeAmount.MEDIUM, FeeAmount.LOW, FeeAmount.LOWEST])
+  // Iterate over fee tiers and create possible pair matchings
+  const usdPools = _(FEE_TIERS)
     .flatMap((feeAmount) => {
-      return _.map<Token, [Token, Token, FeeAmount]>(usdTokens, (usdToken) => [
-        wrappedCurrency,
-        usdToken,
-        feeAmount,
-      ]);
+      return _.map<Token, [Token, Token, FeeAmount]>(usdTokens, (usdToken) => [wrappedCurrency, usdToken, feeAmount]);
     })
     .value();
 
   const poolAccessor = await poolProvider.getPools(usdPools, providerConfig);
 
-  const pools: any = _([
-    FeeAmount.HIGH,
-    FeeAmount.MEDIUM,
-    FeeAmount.LOW,
-    FeeAmount.LOWER,
-    FeeAmount.LOWEST,
-  ])
+  // Generate Native/WETH pair with each stable and fee tier
+  const pools: any = _(FEE_TIERS)
     .flatMap((feeAmount) => {
       const pools: any[] = [];
 
@@ -149,6 +144,8 @@ export async function getHighestLiquidityV3USDPool(
     log.error({ pools }, message);
     throw new Error(message);
   }
+
+  console.log('pools', pools);
 
   const maxPool = pools.reduce((prev: any, current: any) => {
     return JSBI.greaterThan(prev.liquidity, current.liquidity) ? prev : current;
@@ -202,10 +199,7 @@ export async function calculateOptimismToL1FeeFromCalldata(
     chainId: chainId,
     type: 2, // sign the transaction as EIP-1559, otherwise it will fail at maxFeePerGas
   };
-  const [l1GasUsed, l1GasCost] = await Promise.all([
-    estimateL1Gas(provider, tx),
-    estimateL1GasCost(provider, tx),
-  ]);
+  const [l1GasUsed, l1GasCost] = await Promise.all([estimateL1Gas(provider, tx), estimateL1GasCost(provider, tx)]);
   return [l1GasUsed, l1GasCost];
 }
 
@@ -243,11 +237,7 @@ export async function calculateGasUsed(
   // See https://github.com/Uniswap/smart-order-router/pull/464/files#r1441376802
   if (OP_STACKS_CHAINS.includes(chainId)) {
     l2toL1FeeInWei = (
-      await calculateOptimismToL1FeeFromCalldata(
-        route.methodParameters!.calldata,
-        chainId,
-        provider
-      )
+      await calculateOptimismToL1FeeFromCalldata(route.methodParameters!.calldata, chainId, provider)
     )[1];
   }
 
@@ -339,9 +329,7 @@ export function initSwapRouteFromExisting(
 ): SwapRoute {
   const currencyIn = swapRoute.trade.inputAmount.currency;
   const currencyOut = swapRoute.trade.outputAmount.currency;
-  const tradeType = swapRoute.trade.tradeType.valueOf()
-    ? TradeType.EXACT_OUTPUT
-    : TradeType.EXACT_INPUT;
+  const tradeType = swapRoute.trade.tradeType.valueOf() ? TradeType.EXACT_OUTPUT : TradeType.EXACT_INPUT;
   const routesWithValidQuote = swapRoute.route.map((route) => {
     switch (route.protocol) {
       case Protocol.V3:
@@ -418,12 +406,7 @@ export function initSwapRouteFromExisting(
         throw new Error('Invalid protocol');
     }
   });
-  const trade = buildTrade<typeof tradeType>(
-    currencyIn,
-    currencyOut,
-    tradeType,
-    routesWithValidQuote
-  );
+  const trade = buildTrade<typeof tradeType>(currencyIn, currencyOut, tradeType, routesWithValidQuote);
 
   const quoteGasAndPortionAdjusted = swapRoute.portionAmount
     ? portionProvider.getQuoteGasAndPortionAdjusted(
@@ -489,12 +472,7 @@ export const calculateL1GasFeesHelper = async (
   let mainnetFeeInWei = BigNumber.from(0);
   let gasUsedL1OnL2 = BigNumber.from(0);
   if (OP_STACKS_CHAINS.includes(chainId)) {
-    [mainnetGasUsed, mainnetFeeInWei] = await calculateOptimismToL1SecurityFee(
-      route,
-      swapOptions,
-      chainId,
-      provider
-    );
+    [mainnetGasUsed, mainnetFeeInWei] = await calculateOptimismToL1SecurityFee(route, swapOptions, chainId, provider);
   } else if (chainId == ChainId.ARBITRUM) {
     [mainnetGasUsed, mainnetFeeInWei, gasUsedL1OnL2] = calculateArbitrumToL1SecurityFee(
       route,
@@ -506,17 +484,10 @@ export const calculateL1GasFeesHelper = async (
 
   // wrap fee to native currency
   const nativeCurrency = WRAPPED_NATIVE_CURRENCY[chainId];
-  const costNativeCurrency = CurrencyAmount.fromRawAmount(
-    nativeCurrency,
-    mainnetFeeInWei.toString()
-  );
+  const costNativeCurrency = CurrencyAmount.fromRawAmount(nativeCurrency, mainnetFeeInWei.toString());
 
   // convert fee into usd
-  const gasCostL1USD: CurrencyAmount = getQuoteThroughNativePool(
-    chainId,
-    costNativeCurrency,
-    usdPool
-  );
+  const gasCostL1USD: CurrencyAmount = getQuoteThroughNativePool(chainId, costNativeCurrency, usdPool);
 
   let gasCostL1QuoteToken = costNativeCurrency;
   // if the inputted token is not in the native currency, quote a native/quote token pool to get the gas cost in terms of the quote token
@@ -526,9 +497,7 @@ export const calculateL1GasFeesHelper = async (
       gasCostL1QuoteToken = CurrencyAmount.fromRawAmount(quoteToken, 0);
     } else {
       const nativeTokenPrice =
-        nativePool.token0.address == nativeCurrency.address
-          ? nativePool.token0Price
-          : nativePool.token1Price;
+        nativePool.token0.address == nativeCurrency.address ? nativePool.token0Price : nativePool.token1Price;
       gasCostL1QuoteToken = nativeTokenPrice.quote(costNativeCurrency);
     }
   }
@@ -552,20 +521,14 @@ export const calculateL1GasFeesHelper = async (
     provider: BaseProvider
   ): Promise<[BigNumber, BigNumber]> {
     const route: RouteWithValidQuote = routes[0]!;
-    const amountToken =
-      route.tradeType == TradeType.EXACT_INPUT ? route.amount.currency : route.quote.currency;
-    const outputToken =
-      route.tradeType == TradeType.EXACT_INPUT ? route.quote.currency : route.amount.currency;
+    const amountToken = route.tradeType == TradeType.EXACT_INPUT ? route.amount.currency : route.quote.currency;
+    const outputToken = route.tradeType == TradeType.EXACT_INPUT ? route.quote.currency : route.amount.currency;
 
     // build trade for swap calldata
     const trade = buildTrade(amountToken, outputToken, route.tradeType, routes);
     const data = buildSwapMethodParameters(trade, swapConfig, ChainId.OPTIMISM).calldata;
 
-    const [l1GasUsed, l1GasCost] = await calculateOptimismToL1FeeFromCalldata(
-      data,
-      chainId,
-      provider
-    );
+    const [l1GasUsed, l1GasCost] = await calculateOptimismToL1FeeFromCalldata(data, chainId, provider);
     return [l1GasUsed, l1GasCost];
   }
 
@@ -577,10 +540,8 @@ export const calculateL1GasFeesHelper = async (
   ): [BigNumber, BigNumber, BigNumber] {
     const route: RouteWithValidQuote = routes[0]!;
 
-    const amountToken =
-      route.tradeType == TradeType.EXACT_INPUT ? route.amount.currency : route.quote.currency;
-    const outputToken =
-      route.tradeType == TradeType.EXACT_INPUT ? route.quote.currency : route.amount.currency;
+    const amountToken = route.tradeType == TradeType.EXACT_INPUT ? route.amount.currency : route.quote.currency;
+    const outputToken = route.tradeType == TradeType.EXACT_INPUT ? route.quote.currency : route.amount.currency;
 
     // build trade for swap calldata
     const trade = buildTrade(amountToken, outputToken, route.tradeType, routes);

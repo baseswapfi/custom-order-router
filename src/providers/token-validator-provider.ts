@@ -58,10 +58,7 @@ export class TokenValidatorProvider implements ITokenValidatorProvider {
     this.BASES = [WRAPPED_NATIVE_CURRENCY[this.chainId]!.address];
   }
 
-  public async validateTokens(
-    tokens: Token[],
-    providerConfig?: ProviderConfig
-  ): Promise<TokenValidationResults> {
+  public async validateTokens(tokens: Token[], providerConfig?: ProviderConfig): Promise<TokenValidationResults> {
     const tokenAddressToToken = _.keyBy(tokens, 'address');
     const addressesRaw = _(tokens)
       .map((token) => token.address)
@@ -89,9 +86,9 @@ export class TokenValidatorProvider implements ITokenValidatorProvider {
     }
 
     log.info(
-      `Got token validation results for ${
-        addressesRaw.length - addresses.length
-      } tokens from cache. Getting ${addresses.length} on-chain.`
+      `Got token validation results for ${addressesRaw.length - addresses.length} tokens from cache. Getting ${
+        addresses.length
+      } on-chain.`
     );
 
     const functionParams = _(addresses)
@@ -100,20 +97,19 @@ export class TokenValidatorProvider implements ITokenValidatorProvider {
 
     // We use the validate function instead of batchValidate to avoid poison pill problem.
     // One token that consumes too much gas could cause the entire batch to fail.
-    const multicallResult =
-      await this.multicall2Provider.callSameFunctionOnContractWithMultipleParams<
-        [string, string[], string], // address, base token addresses, amount to borrow
-        [number]
-      >({
-        address: this.tokenValidatorAddress,
-        contractInterface: ITokenValidator__factory.createInterface(),
-        functionName: 'validate',
-        functionParams: functionParams,
-        providerConfig,
-        additionalConfig: {
-          gasLimitPerCallOverride: this.gasLimitPerCall,
-        },
-      });
+    const multicallResult = await this.multicall2Provider.callSameFunctionOnContractWithMultipleParams<
+      [string, string[], string], // address, base token addresses, amount to borrow
+      [number]
+    >({
+      address: this.tokenValidatorAddress,
+      contractInterface: ITokenValidator__factory.createInterface(),
+      functionName: 'validate',
+      functionParams: functionParams,
+      providerConfig,
+      additionalConfig: {
+        gasLimitPerCallOverride: this.gasLimitPerCall,
+      },
+    });
 
     for (let i = 0; i < multicallResult.results.length; i++) {
       const resultWrapper = multicallResult.results[i]!;
@@ -152,11 +148,7 @@ export class TokenValidatorProvider implements ITokenValidatorProvider {
         tokenToResult[token.address.toLowerCase()]!
       );
 
-      metric.putMetric(
-        `TokenValidatorProviderValidateCacheMissResult${validationResult}`,
-        1,
-        MetricLoggerUnit.Count
-      );
+      metric.putMetric(`TokenValidatorProviderValidateCacheMissResult${validationResult}`, 1, MetricLoggerUnit.Count);
     }
 
     return {
