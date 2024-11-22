@@ -47,6 +47,7 @@ import {
   Simulator,
   StaticV2SubgraphProvider,
   CachingV2SubgraphProvider,
+  V2SubgraphProvider,
 } from '../../providers';
 
 import { GasPrice, IGasPriceProvider } from '../../providers/gas-price-provider';
@@ -728,7 +729,7 @@ export class AlphaRouter implements IRouter<AlphaRouterConfig>, ISwapToRatio<Alp
       v2SubgraphProvider ??
       new CachingV2SubgraphProvider(
         chainId,
-        new StaticV2SubgraphProvider(chainId),
+        new V2SubgraphProvider(chainId),
         new NodeJSCache(new NodeCache({ stdTTL: 300, useClones: false }))
       );
 
