@@ -145,8 +145,6 @@ export async function getHighestLiquidityV3USDPool(
     throw new Error(message);
   }
 
-  console.log('pools', pools);
-
   const maxPool = pools.reduce((prev: any, current: any) => {
     return JSBI.greaterThan(prev.liquidity, current.liquidity) ? prev : current;
   });

@@ -29,34 +29,24 @@ export type TokenFeeMap = Record<Address, TokenFeeResult>;
 // address at which the FeeDetector lens is deployed
 const FEE_DETECTOR_ADDRESS = (chainId: ChainId) => {
   switch (chainId) {
-    // case ChainId.MAINNET:
-    //   return '0xbc708B192552e19A088b4C4B8772aEeA83bCf760';
     case ChainId.OPTIMISM:
       return '0x96F701640Ff6f1f7541bb9647BFB8c2E0e0d33B0';
-    // case ChainId.BNB:
-    //   return '0xCF6220e4496B091a6b391D48e770f1FbaC63E740';
-    // case ChainId.POLYGON:
-    //   return '0xC988e19819a63C0e487c6Ad8d6668Ac773923BF2';
     case ChainId.BASE:
       return '0x45ede445bf511f14cc4809d81355d4dbf8d97847';
     case ChainId.MODE:
       return '0xc09BF50ac5774f0F1a2406a2D08713683a2Bd3b9';
     case ChainId.ARBITRUM:
       return '0x1222766DA7a1CbCD8451dF214dcD41579a9fb60E';
-    // case ChainId.CELO:
-    //   return '0x8eEa35913DdeD795001562f9bA5b282d3ac04B60';
-    // case ChainId.AVALANCHE:
-    //   return '0x8269d47c4910B8c87789aA0eC128C11A8614dfC8';
-    case ChainId.SONIC_TESTNET:
-      return '';
+    // case ChainId.SONIC_TESTNET:
+    //   return '';
     case ChainId.SONEIUM_TESTNET:
       return '0xc1e624C810D297FD70eF53B0E08F44FABE468591';
     default:
-      // just default to base contract
-      return '0x45ede445bf511f14cc4809d81355d4dbf8d97847';
+      throw new Error(`No fee detector address for chain: ${chainId}`);
   }
 };
 
+// TODO: Will have to verify this for us
 // Amount has to be big enough to avoid rounding errors, but small enough that
 // most v2 pools will have at least this many token units
 // 100000 is the smallest number that avoids rounding errors in bps terms
@@ -84,10 +74,7 @@ export class OnChainTokenFeeFetcher implements ITokenFeeFetcher {
     this.contract = TokenFeeDetector__factory.connect(this.tokenFeeAddress, rpcProvider);
   }
 
-  public async fetchFees(
-    addresses: Address[],
-    providerConfig?: ProviderConfig
-  ): Promise<TokenFeeMap> {
+  public async fetchFees(addresses: Address[], providerConfig?: ProviderConfig): Promise<TokenFeeMap> {
     const tokenToResult: TokenFeeMap = {};
 
     const addressesWithoutBaseToken = addresses.filter(
@@ -104,15 +91,10 @@ export class OnChainTokenFeeFetcher implements ITokenFeeFetcher {
         try {
           // We use the validate function instead of batchValidate to avoid poison pill problem.
           // One token that consumes too much gas could cause the entire batch to fail.
-          const feeResult = await this.contract.callStatic.validate(
-            address,
-            baseToken,
-            amountToBorrow,
-            {
-              gasLimit: this.gasLimitPerCall,
-              blockTag: providerConfig?.blockNumber,
-            }
-          );
+          const feeResult = await this.contract.callStatic.validate(address, baseToken, amountToBorrow, {
+            gasLimit: this.gasLimitPerCall,
+            blockTag: providerConfig?.blockNumber,
+          });
 
           metric.putMetric('TokenFeeFetcherFetchFeesSuccess', 1, MetricLoggerUnit.Count);
 
@@ -137,26 +119,17 @@ export class OnChainTokenFeeFetcher implements ITokenFeeFetcher {
       })
     );
 
-    results.forEach(
-      ({
-        address,
-        buyFeeBps,
-        sellFeeBps,
-        feeTakenOnTransfer,
-        externalTransferFailed,
-        sellReverted,
-      }) => {
-        if (buyFeeBps || sellFeeBps) {
-          tokenToResult[address] = {
-            buyFeeBps,
-            sellFeeBps,
-            feeTakenOnTransfer,
-            externalTransferFailed,
-            sellReverted,
-          };
-        }
+    results.forEach(({ address, buyFeeBps, sellFeeBps, feeTakenOnTransfer, externalTransferFailed, sellReverted }) => {
+      if (buyFeeBps || sellFeeBps) {
+        tokenToResult[address] = {
+          buyFeeBps,
+          sellFeeBps,
+          feeTakenOnTransfer,
+          externalTransferFailed,
+          sellReverted,
+        };
       }
-    );
+    });
 
     return tokenToResult;
   }
