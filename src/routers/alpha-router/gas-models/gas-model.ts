@@ -1,5 +1,10 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, CurrencyAmount as CurrencyAmountRaw, Token } from '@baseswapfi/sdk-core';
+import {
+  ChainId,
+  CurrencyAmount as CurrencyAmountRaw,
+  Token,
+} from '@baseswapfi/sdk-core';
+import { Pair } from '@baseswapfi/v2-sdk';
 import { Pool } from '@baseswapfi/v3-sdk2';
 
 import { ProviderConfig } from '../../../providers/provider';
@@ -22,7 +27,11 @@ import {
   USDT_OPTIMISM,
 } from '../../../providers/token-provider';
 import { IV2PoolProvider } from '../../../providers/v2/pool-provider';
-import { ArbitrumGasData, IL2GasDataProvider, OptimismGasData } from '../../../providers/v3/gas-data-provider';
+import {
+  ArbitrumGasData,
+  IL2GasDataProvider,
+} from '../../../providers/v3/gas-data-provider';
+import { WRAPPED_NATIVE_CURRENCY } from '../../../util';
 import { CurrencyAmount } from '../../../util/amounts';
 import {
   MixedRouteWithValidQuote,
@@ -30,15 +39,23 @@ import {
   V2RouteWithValidQuote,
   V3RouteWithValidQuote,
 } from '../entities/route-with-valid-quote';
-import { WRAPPED_NATIVE_CURRENCY } from '../../../util';
-import { Pair } from '@baseswapfi/v2-sdk';
 
 // @note When adding new usd gas tokens, ensure the tokens are ordered
 // from tokens with highest decimals to lowest decimals. For example,
 // DAI_AVAX has 18 decimals and comes before USDC_AVAX which has 6 decimals.
 export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
-  [ChainId.ARBITRUM]: [DAI_ARBITRUM, USDC_ARBITRUM, USDT_ARBITRUM, USDC_NATIVE_ARBITRUM],
-  [ChainId.OPTIMISM]: [DAI_OPTIMISM, USDC_OPTIMISM, USDT_OPTIMISM, USDC_NATIVE_OPTIMISM],
+  [ChainId.ARBITRUM]: [
+    DAI_ARBITRUM,
+    USDC_ARBITRUM,
+    USDT_ARBITRUM,
+    USDC_NATIVE_ARBITRUM,
+  ],
+  [ChainId.OPTIMISM]: [
+    DAI_OPTIMISM,
+    USDC_OPTIMISM,
+    USDT_OPTIMISM,
+    USDC_NATIVE_OPTIMISM,
+  ],
   [ChainId.BASE]: [DAI_BASE, USDC_BASE, USDT_BASE, USDC_NATIVE_BASE],
   [ChainId.MODE]: [DAI_MODE, USDC_MODE, USDT_MODE],
   // [ChainId.SONIC_TESTNET]: [USDC_SONIC_TESTNET],
@@ -152,7 +169,9 @@ export abstract class IV2GasModelFactory {
  * @abstract
  * @class IOnChainGasModelFactory
  */
-export abstract class IOnChainGasModelFactory<TRouteWithValidQuote extends RouteWithValidQuote> {
+export abstract class IOnChainGasModelFactory<
+  TRouteWithValidQuote extends RouteWithValidQuote
+> {
   public abstract buildGasModel({
     chainId,
     gasPriceWei,
@@ -164,7 +183,9 @@ export abstract class IOnChainGasModelFactory<TRouteWithValidQuote extends Route
     providerConfig,
   }: BuildOnChainGasModelFactoryType): Promise<IGasModel<TRouteWithValidQuote>>;
 
-  protected totalInitializedTicksCrossed(initializedTicksCrossedList: number[]) {
+  protected totalInitializedTicksCrossed(
+    initializedTicksCrossedList: number[]
+  ) {
     let ticksCrossed = 0;
     for (let i = 0; i < initializedTicksCrossedList.length; i++) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -182,15 +203,17 @@ export abstract class IOnChainGasModelFactory<TRouteWithValidQuote extends Route
 // Determines if native currency is token0
 // Gets the native price of the pool, dependent on 0 or 1
 // quotes across the pool
-export const getQuoteThroughNativePool = (
+export function getQuoteThroughNativePool(
   chainId: ChainId,
   nativeTokenAmount: CurrencyAmountRaw<Token>,
   nativeTokenPool: Pool | Pair
-): CurrencyAmount => {
+): CurrencyAmount {
   const nativeCurrency = WRAPPED_NATIVE_CURRENCY[chainId];
   const isToken0 = nativeTokenPool.token0.equals(nativeCurrency);
   // returns mid price in terms of the native currency (the ratio of token/nativeToken)
-  const nativeTokenPrice = isToken0 ? nativeTokenPool.token0Price : nativeTokenPool.token1Price;
+  const nativeTokenPrice = isToken0
+    ? nativeTokenPool.token0Price
+    : nativeTokenPool.token1Price;
   // return gas cost in terms of the non native currency
   return nativeTokenPrice.quote(nativeTokenAmount) as CurrencyAmount;
-};
+}

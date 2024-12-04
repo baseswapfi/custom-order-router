@@ -278,12 +278,16 @@ export const ID_TO_NETWORK_NAME = (id: number): ChainName => {
 export const CHAIN_IDS_LIST = Object.values(ChainId).map((c) => c.toString()) as string[];
 
 export const ID_TO_PROVIDER = (id: ChainId): string => {
-  switch (id) {
-    case ChainId.BASE:
-      return process.env.JSON_RPC_PROVIDER_BASE!;
-    default:
-      throw new Error(`Chain id: ${id} not supported`);
-  }
+  const rpc = process.env[`RPC_${id}`];
+  if (!rpc) throw new Error(`Chain id: ${id} not supported`);
+  return rpc;
+
+  // switch (id) {
+  //   case ChainId.BASE:
+  //     return process.env.JSON_RPC_PROVIDER_BASE!;
+  //   default:
+  //     throw new Error(`Chain id: ${id} not supported`);
+  // }
 };
 
 export const WRAPPED_NATIVE_CURRENCY: { [chainId in ChainId]: Token } = {

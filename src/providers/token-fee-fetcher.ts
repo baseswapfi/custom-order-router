@@ -1,10 +1,17 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider } from '@ethersproject/providers';
 import { ChainId } from '@baseswapfi/sdk-core';
-import { ProviderConfig } from './provider';
-import { log, metric, MetricLoggerUnit, WRAPPED_NATIVE_CURRENCY } from '../util';
+
 import { TokenFeeDetector__factory } from '../types/other/factories/TokenFeeDetector__factory';
 import { TokenFeeDetector } from '../types/other/TokenFeeDetector';
+import {
+  log,
+  metric,
+  MetricLoggerUnit,
+  WRAPPED_NATIVE_CURRENCY,
+} from '../util';
+
+import { ProviderConfig } from './provider';
 
 const DEFAULT_TOKEN_BUY_FEE_BPS = BigNumber.from(0);
 const DEFAULT_TOKEN_SELL_FEE_BPS = BigNumber.from(0);
@@ -56,7 +63,10 @@ const AMOUNT_TO_FLASH_BORROW = '100000';
 const GAS_LIMIT_PER_VALIDATE = 1_000_000;
 
 export interface ITokenFeeFetcher {
-  fetchFees(addresses: Address[], providerConfig?: ProviderConfig): Promise<TokenFeeMap>;
+  fetchFees(
+    addresses: Address[],
+    providerConfig?: ProviderConfig
+  ): Promise<TokenFeeMap>;
 }
 
 export class OnChainTokenFeeFetcher implements ITokenFeeFetcher {
@@ -71,10 +81,16 @@ export class OnChainTokenFeeFetcher implements ITokenFeeFetcher {
     private amountToFlashBorrow = AMOUNT_TO_FLASH_BORROW
   ) {
     this.BASE_TOKEN = WRAPPED_NATIVE_CURRENCY[this.chainId]?.address;
-    this.contract = TokenFeeDetector__factory.connect(this.tokenFeeAddress, rpcProvider);
+    this.contract = TokenFeeDetector__factory.connect(
+      this.tokenFeeAddress,
+      rpcProvider
+    );
   }
 
-  public async fetchFees(addresses: Address[], providerConfig?: ProviderConfig): Promise<TokenFeeMap> {
+  public async fetchFees(
+    addresses: Address[],
+    providerConfig?: ProviderConfig
+  ): Promise<TokenFeeMap> {
     const tokenToResult: TokenFeeMap = {};
 
     const addressesWithoutBaseToken = addresses.filter(
@@ -89,20 +105,40 @@ export class OnChainTokenFeeFetcher implements ITokenFeeFetcher {
     const results = await Promise.all(
       functionParams.map(async ([address, baseToken, amountToBorrow]) => {
         try {
+          // @note We ain't Uni. Surprise. But if we can leverage this fee check thing, it might be more useful to us than even them.
+          // As we expand out on these chains. We do the degen things they wouldn't want or need to bother with.
+          // If even partly like last bull run then there will definitely be some weird shit of some sort
+
           // We use the validate function instead of batchValidate to avoid poison pill problem.
           // One token that consumes too much gas could cause the entire batch to fail.
-          const feeResult = await this.contract.callStatic.validate(address, baseToken, amountToBorrow, {
-            gasLimit: this.gasLimitPerCall,
-            blockTag: providerConfig?.blockNumber,
-          });
+          const feeResult = await this.contract.callStatic.validate(
+            address,
+            baseToken,
+            amountToBorrow,
+            {
+              gasLimit: this.gasLimitPerCall,
+              blockTag: providerConfig?.blockNumber,
+            }
+          );
 
-          metric.putMetric('TokenFeeFetcherFetchFeesSuccess', 1, MetricLoggerUnit.Count);
+          metric.putMetric(
+            'TokenFeeFetcherFetchFeesSuccess',
+            1,
+            MetricLoggerUnit.Count
+          );
 
           return { address, ...feeResult };
         } catch (err) {
-          log.error({ err }, `Error calling validate on-chain for token ${address}`);
+          log.error(
+            { err },
+            `Error calling validate on-chain for token ${address}`
+          );
 
-          metric.putMetric('TokenFeeFetcherFetchFeesFailure', 1, MetricLoggerUnit.Count);
+          metric.putMetric(
+            'TokenFeeFetcherFetchFeesFailure',
+            1,
+            MetricLoggerUnit.Count
+          );
 
           // in case of FOT token fee fetch failure, we return null
           // so that they won't get returned from the token-fee-fetcher
@@ -119,17 +155,26 @@ export class OnChainTokenFeeFetcher implements ITokenFeeFetcher {
       })
     );
 
-    results.forEach(({ address, buyFeeBps, sellFeeBps, feeTakenOnTransfer, externalTransferFailed, sellReverted }) => {
-      if (buyFeeBps || sellFeeBps) {
-        tokenToResult[address] = {
-          buyFeeBps,
-          sellFeeBps,
-          feeTakenOnTransfer,
-          externalTransferFailed,
-          sellReverted,
-        };
+    results.forEach(
+      ({
+        address,
+        buyFeeBps,
+        sellFeeBps,
+        feeTakenOnTransfer,
+        externalTransferFailed,
+        sellReverted,
+      }) => {
+        if (buyFeeBps || sellFeeBps) {
+          tokenToResult[address] = {
+            buyFeeBps,
+            sellFeeBps,
+            feeTakenOnTransfer,
+            externalTransferFailed,
+            sellReverted,
+          };
+        }
       }
-    });
+    );
 
     return tokenToResult;
   }

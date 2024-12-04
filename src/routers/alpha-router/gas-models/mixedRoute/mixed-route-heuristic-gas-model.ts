@@ -5,10 +5,14 @@ import { Pair } from '@baseswapfi/v2-sdk';
 import { Pool as V3Pool } from '@baseswapfi/v3-sdk2';
 import JSBI from 'jsbi';
 
+import { TPool } from '@baseswapfi/router-sdk/dist/utils/TPool';
 import { WRAPPED_NATIVE_CURRENCY } from '../../../..';
 import { log } from '../../../../util';
 import { CurrencyAmount } from '../../../../util/amounts';
-import { getV2NativePool } from '../../../../util/gas-factory-helpers';
+import {
+  GasFactoryHelper,
+  getV2NativePool,
+} from '../../../../util/gas-factory-helpers';
 import { MixedRouteWithValidQuote } from '../../entities/route-with-valid-quote';
 import {
   BASE_SWAP_COST,
@@ -19,7 +23,6 @@ import {
 import {
   BuildOnChainGasModelFactoryType,
   GasModelProviderConfig,
-  getQuoteThroughNativePool,
   IGasModel,
   IOnChainGasModelFactory,
 } from '../gas-model';
@@ -54,16 +57,24 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory<
     quoteToken,
     v2poolProvider: V2poolProvider,
     providerConfig,
-  }: BuildOnChainGasModelFactoryType): Promise<IGasModel<MixedRouteWithValidQuote>> {
+  }: BuildOnChainGasModelFactoryType): Promise<
+    IGasModel<MixedRouteWithValidQuote>
+  > {
     const nativeCurrency = WRAPPED_NATIVE_CURRENCY[chainId]!;
     const usdPool: V3Pool = pools.usdPool;
-    const usdToken = usdPool.token0.equals(nativeCurrency) ? usdPool.token1 : usdPool.token0;
+    const usdToken = usdPool.token0.equals(nativeCurrency)
+      ? usdPool.token1
+      : usdPool.token0;
 
     let nativeV2Pool: Pair | null;
     // Avoid fetching for a (WETH,WETH) pool here, we handle the quoteToken = wrapped native case in estimateGasCost
     if (!quoteToken.equals(nativeCurrency) && V2poolProvider) {
       /// MixedRoutes
-      nativeV2Pool = await getV2NativePool(quoteToken, V2poolProvider, providerConfig);
+      nativeV2Pool = await getV2NativePool(
+        quoteToken,
+        V2poolProvider,
+        providerConfig
+      );
     }
 
     const estimateGasCost = (
@@ -82,17 +93,18 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory<
       );
 
       /** ------ MARK: USD Logic -------- */
-      const gasCostInTermsOfUSD = getQuoteThroughNativePool(
+      const gasCostInTermsOfUSD = GasFactoryHelper.getQuoteThroughNativePool(
         chainId,
         totalGasCostNativeCurrency,
         usdPool
       );
 
       /** ------ MARK: Conditional logic run if gasToken is specified  -------- */
-      const nativeAndSpecifiedGasTokenPool: V3Pool | null = pools.nativeAndSpecifiedGasTokenV3Pool;
+      const nativeAndSpecifiedGasTokenPool: V3Pool | null =
+        pools.nativeAndSpecifiedGasTokenV3Pool;
       let gasCostInTermsOfGasToken: CurrencyAmount | undefined = undefined;
       if (nativeAndSpecifiedGasTokenPool) {
-        gasCostInTermsOfGasToken = getQuoteThroughNativePool(
+        gasCostInTermsOfGasToken = GasFactoryHelper.getQuoteThroughNativePool(
           chainId,
           totalGasCostNativeCurrency,
           nativeAndSpecifiedGasTokenPool
@@ -133,15 +145,17 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory<
       /// we will use nativeV2Pool for fallback if nativeV3 does not exist or has 0 liquidity
       /// can use ! here because we return above if v3Pool and v2Pool are null
       const nativePool =
-        (!nativeV3Pool || JSBI.equal(nativeV3Pool.liquidity, JSBI.BigInt(0))) && nativeV2Pool
+        (!nativeV3Pool || JSBI.equal(nativeV3Pool.liquidity, JSBI.BigInt(0))) &&
+        nativeV2Pool
           ? nativeV2Pool
           : nativeV3Pool!;
 
-      const gasCostInTermsOfQuoteToken = getQuoteThroughNativePool(
-        chainId,
-        totalGasCostNativeCurrency,
-        nativePool
-      );
+      const gasCostInTermsOfQuoteToken =
+        GasFactoryHelper.getQuoteThroughNativePool(
+          chainId,
+          totalGasCostNativeCurrency,
+          nativePool
+        );
 
       return {
         gasEstimate: baseGasUse,
@@ -170,34 +184,46 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory<
      * Since we must make a separate call to multicall for each v3 and v2 section, we will have to
      * add the BASE_SWAP_COST to each section.
      */
+    let baseGasUseV2Only = BigNumber.from(0);
+    let baseGasUseV3Only = BigNumber.from(0);
     let baseGasUse = BigNumber.from(0);
+    let routeContainsV4Pool = false;
 
     const route = routeWithValidQuote.route;
 
     const res = partitionMixedRouteByProtocol(route);
-    res.map((section: (Pair | V3Pool)[]) => {
+    res.map((section: TPool[]) => {
       if (section.every((pool) => pool instanceof V3Pool)) {
-        baseGasUse = baseGasUse.add(BASE_SWAP_COST(chainId));
-        baseGasUse = baseGasUse.add(COST_PER_HOP(chainId).mul(section.length));
+        baseGasUseV3Only = baseGasUseV3Only.add(BASE_SWAP_COST(chainId));
+        baseGasUseV3Only = baseGasUseV3Only.add(
+          COST_PER_HOP(chainId).mul(section.length)
+        );
+        baseGasUse = baseGasUse.add(baseGasUseV3Only);
       } else if (section.every((pool) => pool instanceof Pair)) {
-        baseGasUse = baseGasUse.add(BASE_SWAP_COST_V2);
-        baseGasUse = baseGasUse.add(
+        baseGasUseV2Only = baseGasUseV2Only.add(BASE_SWAP_COST_V2);
+        baseGasUseV2Only = baseGasUseV2Only.add(
           /// same behavior in v2 heuristic gas model factory
           COST_PER_EXTRA_HOP_V2.mul(section.length - 1)
         );
+        baseGasUse = baseGasUse.add(baseGasUseV2Only);
       }
-      // else if (section.every((pool) => pool instanceof V4Pool)) {
-      //   throw new Error(
-      //     'V4 pools are not supported in the heuristic gas model'
-      //   );
-      // }
     });
 
-    const tickGasUse = COST_PER_INIT_TICK(chainId).mul(totalInitializedTicksCrossed);
+    const tickGasUse = COST_PER_INIT_TICK(chainId).mul(
+      totalInitializedTicksCrossed
+    );
     const uninitializedTickGasUse = COST_PER_UNINIT_TICK.mul(0);
 
-    // base estimate gas used based on chainId estimates for hops and ticks gas useage
-    baseGasUse = baseGasUse.add(tickGasUse).add(uninitializedTickGasUse);
+    if (routeContainsV4Pool) {
+      // If the route contains a V4 pool, we know we are hitting mixed quoter V2, not mixed quoter V1,
+      // Hence we already know the v3 and v4 hops part of the quoter gas estimate.
+      // We only need to add the base gas use for the v2 part of the route,
+      // because mixed quoter doesn't have a way to estimate gas for v2 pools swaps.
+      baseGasUse = baseGasUseV2Only.add(routeWithValidQuote.quoterGasEstimate);
+    } else {
+      // base estimate gas used based on chainId estimates for hops and ticks gas useage
+      baseGasUse = baseGasUse.add(tickGasUse).add(uninitializedTickGasUse);
+    }
 
     if (providerConfig?.additionalGasOverhead) {
       baseGasUse = baseGasUse.add(providerConfig.additionalGasOverhead);

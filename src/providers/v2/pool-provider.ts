@@ -5,7 +5,12 @@ import retry, { Options as RetryOptions } from 'async-retry';
 import _ from 'lodash';
 
 import { IUniswapV2Pair__factory } from '../../types/v2/factories/IUniswapV2Pair__factory';
-import { CurrencyAmount, ID_TO_NETWORK_NAME, metric, MetricLoggerUnit } from '../../util';
+import {
+  CurrencyAmount,
+  ID_TO_NETWORK_NAME,
+  metric,
+  MetricLoggerUnit,
+} from '../../util';
 import { log } from '../../util/log';
 import { poolToString } from '../../util/routes';
 import { IMulticallProvider, Result } from '../multicall-provider';
@@ -33,7 +38,10 @@ export interface IV2PoolProvider {
    * @param [providerConfig] The provider config.
    * @returns A pool accessor with methods for accessing the pools.
    */
-  getPools(tokenPairs: [Token, Token][], providerConfig?: ProviderConfig): Promise<V2PoolAccessor>;
+  getPools(
+    tokenPairs: [Token, Token][],
+    providerConfig?: ProviderConfig
+  ): Promise<V2PoolAccessor>;
 
   /**
    * Gets the pool address for the specified token pair.
@@ -90,7 +98,10 @@ export class V2PoolProvider implements IV2PoolProvider {
     for (const tokenPair of tokenPairs) {
       const [tokenA, tokenB] = tokenPair;
 
-      const { poolAddress, token0, token1 } = this.getPoolAddress(tokenA, tokenB);
+      const { poolAddress, token0, token1 } = this.getPoolAddress(
+        tokenA,
+        tokenB
+      );
 
       if (poolAddressSet.has(poolAddress)) {
         continue;
@@ -106,7 +117,11 @@ export class V2PoolProvider implements IV2PoolProvider {
     );
 
     metric.putMetric('V2_RPC_POOL_RPC_CALL', 1, MetricLoggerUnit.None);
-    metric.putMetric('V2GetReservesBatchSize', sortedPoolAddresses.length, MetricLoggerUnit.Count);
+    metric.putMetric(
+      'V2GetReservesBatchSize',
+      sortedPoolAddresses.length,
+      MetricLoggerUnit.Count
+    );
     metric.putMetric(
       `V2GetReservesBatchSize_${ID_TO_NETWORK_NAME(this.chainId)}`,
       sortedPoolAddresses.length,
@@ -114,13 +129,22 @@ export class V2PoolProvider implements IV2PoolProvider {
     );
 
     const [reservesResults, tokenPropertiesMap] = await Promise.all([
-      this.getPoolsData<IReserves>(sortedPoolAddresses, 'getReserves', providerConfig),
-      this.tokenPropertiesProvider.getTokensProperties(this.flatten(tokenPairs), providerConfig),
+      this.getPoolsData<IReserves>(
+        sortedPoolAddresses,
+        'getReserves',
+        providerConfig
+      ),
+      this.tokenPropertiesProvider.getTokensProperties(
+        this.flatten(tokenPairs),
+        providerConfig
+      ),
     ]);
 
     log.info(
       `Got reserves for ${poolAddressSet.size} pools ${
-        providerConfig?.blockNumber ? `as of block: ${await providerConfig?.blockNumber}.` : ``
+        providerConfig?.blockNumber
+          ? `as of block: ${await providerConfig?.blockNumber}.`
+          : ``
       }`
     );
 
@@ -140,8 +164,8 @@ export class V2PoolProvider implements IV2PoolProvider {
 
       let [token0, token1] = sortedTokenPairs[i]!;
       if (
-        tokenPropertiesMap[token0.address.toLowerCase()]?.tokenValidationResult ===
-        TokenValidationResult.FOT
+        tokenPropertiesMap[token0.address.toLowerCase()]
+          ?.tokenValidationResult === TokenValidationResult.FOT
       ) {
         token0 = new Token(
           token0.chainId,
@@ -150,14 +174,18 @@ export class V2PoolProvider implements IV2PoolProvider {
           token0.symbol,
           token0.name,
           true, // at this point we know it's valid token address
-          tokenPropertiesMap[token0.address.toLowerCase()]?.tokenFeeResult?.buyFeeBps,
-          tokenPropertiesMap[token0.address.toLowerCase()]?.tokenFeeResult?.sellFeeBps
+          tokenPropertiesMap[
+            token0.address.toLowerCase()
+          ]?.tokenFeeResult?.buyFeeBps,
+          tokenPropertiesMap[
+            token0.address.toLowerCase()
+          ]?.tokenFeeResult?.sellFeeBps
         );
       }
 
       if (
-        tokenPropertiesMap[token1.address.toLowerCase()]?.tokenValidationResult ===
-        TokenValidationResult.FOT
+        tokenPropertiesMap[token1.address.toLowerCase()]
+          ?.tokenValidationResult === TokenValidationResult.FOT
       ) {
         token1 = new Token(
           token1.chainId,
@@ -166,8 +194,12 @@ export class V2PoolProvider implements IV2PoolProvider {
           token1.symbol,
           token1.name,
           true, // at this point we know it's valid token address
-          tokenPropertiesMap[token1.address.toLowerCase()]?.tokenFeeResult?.buyFeeBps,
-          tokenPropertiesMap[token1.address.toLowerCase()]?.tokenFeeResult?.sellFeeBps
+          tokenPropertiesMap[
+            token1.address.toLowerCase()
+          ]?.tokenFeeResult?.buyFeeBps,
+          tokenPropertiesMap[
+            token1.address.toLowerCase()
+          ]?.tokenFeeResult?.sellFeeBps
         );
       }
 
@@ -204,7 +236,8 @@ export class V2PoolProvider implements IV2PoolProvider {
         const { poolAddress } = this.getPoolAddress(tokenA, tokenB);
         return poolAddressToPool[poolAddress];
       },
-      getPoolByAddress: (address: string): Pair | undefined => poolAddressToPool[address],
+      getPoolByAddress: (address: string): Pair | undefined =>
+        poolAddressToPool[address],
       getAllPools: (): Pair[] => Object.values(poolAddressToPool),
     };
   }
@@ -213,7 +246,9 @@ export class V2PoolProvider implements IV2PoolProvider {
     tokenA: Token,
     tokenB: Token
   ): { poolAddress: string; token0: Token; token1: Token } {
-    const [token0, token1] = tokenA.sortsBefore(tokenB) ? [tokenA, tokenB] : [tokenB, tokenA];
+    const [token0, token1] = tokenA.sortsBefore(tokenB)
+      ? [tokenA, tokenB]
+      : [tokenB, tokenA];
 
     const cacheKey = `${this.chainId}/${token0.address}/${token1.address}`;
 
@@ -236,7 +271,10 @@ export class V2PoolProvider implements IV2PoolProvider {
     providerConfig?: ProviderConfig
   ): Promise<Result<TReturn>[]> {
     const { results, blockNumber } = await retry(async () => {
-      return this.multicall2Provider.callSameFunctionOnMultipleContracts<undefined, TReturn>({
+      return this.multicall2Provider.callSameFunctionOnMultipleContracts<
+        undefined,
+        TReturn
+      >({
         addresses: poolAddresses,
         contractInterface: IUniswapV2Pair__factory.createInterface(),
         functionName: functionName,

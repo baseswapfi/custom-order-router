@@ -3,7 +3,10 @@ import { BaseProvider } from '@ethersproject/providers';
 import { ChainId, Price } from '@baseswapfi/sdk-core';
 import { Pool } from '@baseswapfi/v3-sdk2';
 import { CurrencyAmount, log, WRAPPED_NATIVE_CURRENCY } from '../../../util';
-import { calculateL1GasFeesHelper } from '../../../util/gas-factory-helpers';
+import {
+  calculateL1GasFeesHelper,
+  GasFactoryHelper,
+} from '../../../util/gas-factory-helpers';
 import { V3RouteWithValidQuote } from '../entities';
 import {
   BASE_SWAP_COST,
@@ -16,7 +19,6 @@ import {
 import {
   BuildOnChainGasModelFactoryType,
   GasModelProviderConfig,
-  getQuoteThroughNativePool,
   IGasModel,
   IOnChainGasModelFactory,
 } from './gas-model';
@@ -39,7 +41,9 @@ export abstract class TickBasedHeuristicGasModelFactory<
     quoteToken,
     l2GasDataProvider,
     providerConfig,
-  }: BuildOnChainGasModelFactoryType): Promise<IGasModel<TRouteWithValidQuote>> {
+  }: BuildOnChainGasModelFactoryType): Promise<
+    IGasModel<TRouteWithValidQuote>
+  > {
     const l2GasData = l2GasDataProvider
       ? await l2GasDataProvider.getGasData(providerConfig)
       : undefined;
@@ -72,7 +76,9 @@ export abstract class TickBasedHeuristicGasModelFactory<
       nativeAmountPool = pools.nativeAndAmountTokenV3Pool;
     }
 
-    const usdToken = usdPool.token0.equals(nativeCurrency) ? usdPool.token1 : usdPool.token0;
+    const usdToken = usdPool.token0.equals(nativeCurrency)
+      ? usdPool.token1
+      : usdPool.token0;
 
     const estimateGasCost = (
       routeWithValidQuote: TRouteWithValidQuote
@@ -93,21 +99,22 @@ export abstract class TickBasedHeuristicGasModelFactory<
       // We only need to go through V2 and V3 USD pools for now,
       // because v4 pools don't have deep liquidity yet.
       // If one day, we see v3 usd pools have much deeper liquidity than v2/v3 usd pools, then we will add v4 pools for gas cost
-      const gasCostInTermsOfUSD = getQuoteThroughNativePool(
+      const gasCostInTermsOfUSD = GasFactoryHelper.getQuoteThroughNativePool(
         chainId,
         totalGasCostNativeCurrency,
         usdPool
       );
 
       /** ------ MARK: Conditional logic run if gasToken is specified  -------- */
-      const nativeAndSpecifiedGasTokenPool: Pool | null = pools.nativeAndSpecifiedGasTokenV3Pool;
+      const nativeAndSpecifiedGasTokenPool: Pool | null =
+        pools.nativeAndSpecifiedGasTokenV3Pool;
       let gasCostInTermsOfGasToken: CurrencyAmount | undefined = undefined;
       // we don't want to fetch the gasToken pool if the gasToken is the native currency
       if (nativeAndSpecifiedGasTokenPool) {
         // We only need to go through V2 and V3 USD pools for now,
         // because v4 pools don't have deep liquidity yet.
         // If one day, we see v3 usd pools have much deeper liquidity than v2/v3 usd pools, then we will add v4 pools for gas cost
-        gasCostInTermsOfGasToken = getQuoteThroughNativePool(
+        gasCostInTermsOfGasToken = GasFactoryHelper.getQuoteThroughNativePool(
           chainId,
           totalGasCostNativeCurrency,
           nativeAndSpecifiedGasTokenPool
@@ -132,14 +139,15 @@ export abstract class TickBasedHeuristicGasModelFactory<
 
       // Since the quote token is not in the native currency, we convert the gas cost to be in terms of the quote token.
       // We do this by getting the highest liquidity <quoteToken>/<nativeCurrency> pool. eg. <quoteToken>/ETH pool.
-      const nativeAndQuoteTokenPool: Pool | null = pools.nativeAndQuoteTokenV3Pool;
+      const nativeAndQuoteTokenPool: Pool | null =
+        pools.nativeAndQuoteTokenV3Pool;
 
       let gasCostInTermsOfQuoteToken: CurrencyAmount | null = null;
       if (nativeAndQuoteTokenPool) {
         // We only need to go through V2 and V3 USD pools for now,
         // because v4 pools don't have deep liquidity yet.
         // If one day, we see v3 usd pools have much deeper liquidity than v2/v3 usd pools, then we will add v4 pools for gas cost
-        gasCostInTermsOfQuoteToken = getQuoteThroughNativePool(
+        gasCostInTermsOfQuoteToken = GasFactoryHelper.getQuoteThroughNativePool(
           chainId,
           totalGasCostNativeCurrency,
           nativeAndQuoteTokenPool
@@ -166,7 +174,8 @@ export abstract class TickBasedHeuristicGasModelFactory<
           routeWithValidQuote.quote.quotient
         );
 
-        const inputIsToken0 = nativeAmountPool.token0.address == nativeCurrency.address;
+        const inputIsToken0 =
+          nativeAmountPool.token0.address == nativeCurrency.address;
         // ratio of input / native
         const nativeAndAmountTokenPrice = inputIsToken0
           ? nativeAmountPool.token0Price
@@ -179,9 +188,14 @@ export abstract class TickBasedHeuristicGasModelFactory<
         // Convert gasCostInTermsOfAmountToken to quote token using execution price
         let syntheticGasCostInTermsOfQuoteToken: CurrencyAmount | null;
         try {
-          syntheticGasCostInTermsOfQuoteToken = executionPrice.quote(gasCostInTermsOfAmountToken);
+          syntheticGasCostInTermsOfQuoteToken = executionPrice.quote(
+            gasCostInTermsOfAmountToken
+          );
         } catch (err) {
-          if (err instanceof RangeError && err.message.includes('Division by zero')) {
+          if (
+            err instanceof RangeError &&
+            err.message.includes('Division by zero')
+          ) {
             // If the quote fails (division by zero), set syntheticGasCostInTermsOfQuoteToken to null
             syntheticGasCostInTermsOfQuoteToken = null;
           } else {
@@ -196,15 +210,19 @@ export abstract class TickBasedHeuristicGasModelFactory<
         if (
           syntheticGasCostInTermsOfQuoteToken !== null &&
           (gasCostInTermsOfQuoteToken === null ||
-            syntheticGasCostInTermsOfQuoteToken.lessThan(gasCostInTermsOfQuoteToken.asFraction))
+            syntheticGasCostInTermsOfQuoteToken.lessThan(
+              gasCostInTermsOfQuoteToken.asFraction
+            ))
         ) {
           log.info(
             {
-              nativeAndAmountTokenPrice: nativeAndAmountTokenPrice.toSignificant(6),
+              nativeAndAmountTokenPrice:
+                nativeAndAmountTokenPrice.toSignificant(6),
               gasCostInTermsOfQuoteToken: gasCostInTermsOfQuoteToken
                 ? gasCostInTermsOfQuoteToken.toExact()
                 : 0,
-              gasCostInTermsOfAmountToken: gasCostInTermsOfAmountToken.toExact(),
+              gasCostInTermsOfAmountToken:
+                gasCostInTermsOfAmountToken.toExact(),
               executionPrice: executionPrice.toSignificant(6),
               syntheticGasCostInTermsOfQuoteToken:
                 syntheticGasCostInTermsOfQuoteToken?.toSignificant(6),
@@ -266,7 +284,9 @@ export abstract class TickBasedHeuristicGasModelFactory<
     // adjustment.
     const tokenOverhead = TOKEN_OVERHEAD(chainId, routeWithValidQuote.route);
 
-    const tickGasUse = COST_PER_INIT_TICK(chainId).mul(totalInitializedTicksCrossed);
+    const tickGasUse = COST_PER_INIT_TICK(chainId).mul(
+      totalInitializedTicksCrossed
+    );
     const uninitializedTickGasUse = COST_PER_UNINIT_TICK.mul(0);
 
     /*
