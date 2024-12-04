@@ -1,7 +1,9 @@
 import { parseUnits } from '@ethersproject/units';
-import { Currency, CurrencyAmount as CurrencyAmountRaw } from '@baseswapfi/sdk-core';
+import { ChainId, Currency, CurrencyAmount as CurrencyAmountRaw, Fraction } from '@baseswapfi/sdk-core';
 import { FeeAmount } from '@baseswapfi/v3-sdk2';
 import JSBI from 'jsbi';
+import { FEE_TIERS } from '../providers/v3/fee-tiers';
+import { AlphaRouterConfig } from '../routers';
 
 export class CurrencyAmount extends CurrencyAmountRaw<Currency> {}
 
@@ -49,4 +51,33 @@ export function unparseFeeAmount(feeAmount: FeeAmount) {
     default:
       throw new Error(`Fee amount ${feeAmount} not supported.`);
   }
+}
+
+export function getApplicableV3FeeAmounts(chainId: ChainId): FeeAmount[] {
+  const feeAmounts = FEE_TIERS;
+
+  // if (chainId === ChainId.BASE) {
+  //   feeAmounts.push(FeeAmount.LOW_200, FeeAmount.LOW_300, FeeAmount.LOW_400);
+  // }
+
+  return feeAmounts;
+}
+
+// Note multiplications here can result in a loss of precision in the amounts (e.g. taking 50% of 101)
+// This is reconcilled at the end of the algorithm by adding any lost precision to one of
+// the splits in the route.
+export function getAmountDistribution(
+  amount: CurrencyAmount,
+  routingConfig: AlphaRouterConfig
+): [number[], CurrencyAmount[]] {
+  const { distributionPercent } = routingConfig;
+  const percents = [];
+  const amounts = [];
+
+  for (let i = 1; i <= 100 / distributionPercent; i++) {
+    percents.push(i * distributionPercent);
+    amounts.push(amount.multiply(new Fraction(i * distributionPercent, 100)));
+  }
+
+  return [percents, amounts];
 }

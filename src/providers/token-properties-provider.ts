@@ -1,16 +1,11 @@
 import { BigNumber } from '@ethersproject/bignumber';
-import { ChainId, Token } from '@baseswapfi/sdk-core';
+import { ChainId, Currency, Token } from '@baseswapfi/sdk-core';
 
 import { log, metric, MetricLoggerUnit } from '../util';
 
 import { ICache } from './cache';
 import { ProviderConfig } from './provider';
-import {
-  DEFAULT_TOKEN_FEE_RESULT,
-  ITokenFeeFetcher,
-  TokenFeeMap,
-  TokenFeeResult,
-} from './token-fee-fetcher';
+import { DEFAULT_TOKEN_FEE_RESULT, ITokenFeeFetcher, TokenFeeMap, TokenFeeResult } from './token-fee-fetcher';
 import { DEFAULT_ALLOWLIST, TokenValidationResult } from './token-validator-provider';
 
 export const DEFAULT_TOKEN_PROPERTIES_RESULT: TokenPropertiesResult = {
@@ -27,15 +22,11 @@ export type TokenPropertiesResult = {
 export type TokenPropertiesMap = Record<Address, TokenPropertiesResult>;
 
 export interface ITokenPropertiesProvider {
-  getTokensProperties(
-    tokens: Token[],
-    providerConfig?: ProviderConfig
-  ): Promise<TokenPropertiesMap>;
+  getTokensProperties(tokens: Currency[], providerConfig?: ProviderConfig): Promise<TokenPropertiesMap>;
 }
 
 export class TokenPropertiesProvider implements ITokenPropertiesProvider {
-  private CACHE_KEY = (chainId: ChainId, address: string) =>
-    `token-properties-${chainId}-${address}`;
+  private CACHE_KEY = (chainId: ChainId, address: string) => `token-properties-${chainId}-${address}`;
 
   constructor(
     private chainId: ChainId,
@@ -46,10 +37,7 @@ export class TokenPropertiesProvider implements ITokenPropertiesProvider {
     private negativeCacheEntryTTL = NEGATIVE_CACHE_ENTRY_TTL
   ) {}
 
-  public async getTokensProperties(
-    tokens: Token[],
-    providerConfig?: ProviderConfig
-  ): Promise<TokenPropertiesMap> {
+  public async getTokensProperties(tokens: Token[], providerConfig?: ProviderConfig): Promise<TokenPropertiesMap> {
     const tokenToResult: TokenPropertiesMap = {};
 
     if (!providerConfig?.enableFeeOnTransferFeeFetching) {
@@ -68,8 +56,7 @@ export class TokenPropertiesProvider implements ITokenPropertiesProvider {
       if (cachedValue) {
         metric.putMetric('TokenPropertiesProviderBatchGetCacheHit', 1, MetricLoggerUnit.Count);
         const tokenFee = cachedValue.tokenFeeResult;
-        const tokenFeeResultExists: BigNumber | undefined =
-          tokenFee && (tokenFee.buyFeeBps || tokenFee.sellFeeBps);
+        const tokenFeeResultExists: BigNumber | undefined = tokenFee && (tokenFee.buyFeeBps || tokenFee.sellFeeBps);
 
         if (tokenFeeResultExists) {
           metric.putMetric(
@@ -78,11 +65,7 @@ export class TokenPropertiesProvider implements ITokenPropertiesProvider {
             MetricLoggerUnit.Count
           );
         } else {
-          metric.putMetric(
-            `TokenPropertiesProviderCacheHitTokenFeeResultNotExists`,
-            1,
-            MetricLoggerUnit.Count
-          );
+          metric.putMetric(`TokenPropertiesProviderCacheHitTokenFeeResultNotExists`, 1, MetricLoggerUnit.Count);
         }
 
         tokenToResult[address] = cachedValue;
@@ -99,10 +82,7 @@ export class TokenPropertiesProvider implements ITokenPropertiesProvider {
       let tokenFeeMap: TokenFeeMap = {};
 
       try {
-        tokenFeeMap = await this.tokenFeeFetcher.fetchFees(
-          addressesToFetchFeesOnchain,
-          providerConfig
-        );
+        tokenFeeMap = await this.tokenFeeFetcher.fetchFees(addressesToFetchFeesOnchain, providerConfig);
       } catch (err) {
         log.error({ err }, `Error fetching fees for tokens ${addressesToFetchFeesOnchain}`);
       }
@@ -110,8 +90,7 @@ export class TokenPropertiesProvider implements ITokenPropertiesProvider {
       await Promise.all(
         addressesToFetchFeesOnchain.map((address) => {
           const tokenFee = tokenFeeMap[address];
-          const tokenFeeResultExists: BigNumber | undefined =
-            tokenFee && (tokenFee.buyFeeBps || tokenFee.sellFeeBps);
+          const tokenFeeResultExists: BigNumber | undefined = tokenFee && (tokenFee.buyFeeBps || tokenFee.sellFeeBps);
 
           if (tokenFeeResultExists) {
             // we will leverage the metric to log the token fee result, if it exists
@@ -141,11 +120,7 @@ export class TokenPropertiesProvider implements ITokenPropertiesProvider {
               this.positiveCacheEntryTTL
             );
           } else {
-            metric.putMetric(
-              `TokenPropertiesProviderTokenFeeResultCacheMissNotExists`,
-              1,
-              MetricLoggerUnit.Count
-            );
+            metric.putMetric(`TokenPropertiesProviderTokenFeeResultCacheMissNotExists`, 1, MetricLoggerUnit.Count);
 
             const tokenPropertiesResult = {
               tokenFeeResult: undefined,

@@ -11,6 +11,8 @@ export const SUPPORTED_CHAINS: ChainId[] = [...OP_STACKS_CHAINS, ChainId.ARBITRU
 
 export const V2_SUPPORTED = [...OP_STACKS_CHAINS, ChainId.SONIC_TESTNET];
 
+export const MIXED_SUPPORTED = [ChainId.BASE];
+
 export const HAS_L1_FEE = [...OP_STACKS_CHAINS, ChainId.ARBITRUM];
 
 export const ID_TO_CHAIN_ID = (id: number): ChainId => {

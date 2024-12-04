@@ -6,12 +6,7 @@ import { log } from '../../../util/log';
 import { poolToString, routeToString } from '../../../util/routes';
 import { MixedRoute, SupportedRoutes, V2Route, V3Route } from '../../router';
 
-export function computeAllV3Routes(
-  tokenIn: Token,
-  tokenOut: Token,
-  pools: V3Pool[],
-  maxHops: number
-): V3Route[] {
+export function computeAllV3Routes(tokenIn: Token, tokenOut: Token, pools: V3Pool[], maxHops: number): V3Route[] {
   return computeAllRoutes<V3Pool, V3Route>(
     tokenIn,
     tokenOut,
@@ -23,12 +18,7 @@ export function computeAllV3Routes(
   );
 }
 
-export function computeAllV2Routes(
-  tokenIn: Token,
-  tokenOut: Token,
-  pools: Pair[],
-  maxHops: number
-): V2Route[] {
+export function computeAllV2Routes(tokenIn: Token, tokenOut: Token, pools: Pair[], maxHops: number): V2Route[] {
   return computeAllRoutes<Pair, V2Route>(
     tokenIn,
     tokenOut,
@@ -55,12 +45,9 @@ export function computeAllMixedRoutes(
     parts,
     maxHops
   );
-  /// filter out pure v4 and v3 and v2 routes
+  /// filter out pure v3 and v2 routes
   return routesRaw.filter((route) => {
-    return (
-      !route.pools.every((pool) => pool instanceof V3Pool) &&
-      !route.pools.every((pool) => pool instanceof Pair)
-    );
+    return !route.pools.every((pool) => pool instanceof V3Pool) && !route.pools.every((pool) => pool instanceof Pair);
   });
 }
 
@@ -103,9 +90,7 @@ export function computeAllRoutes<TPool extends Pair | V3Pool, TRoute extends Sup
         continue;
       }
 
-      const currentTokenOut = curPool.token0.equals(previousTokenOut)
-        ? curPool.token1
-        : curPool.token0;
+      const currentTokenOut = curPool.token0.equals(previousTokenOut) ? curPool.token1 : curPool.token0;
 
       // TODO: ROUTE-217 - Support native currency routing in V4
       if (tokensVisited.has(currentTokenOut.wrapped.address.toLowerCase())) {
@@ -115,14 +100,7 @@ export function computeAllRoutes<TPool extends Pair | V3Pool, TRoute extends Sup
       tokensVisited.add(currentTokenOut.wrapped.address.toLowerCase());
       currentRoute.push(curPool);
       poolsUsed[i] = true;
-      computeRoutes(
-        tokenIn,
-        tokenOut,
-        currentRoute,
-        poolsUsed,
-        tokensVisited,
-        currentTokenOut.wrapped
-      );
+      computeRoutes(tokenIn, tokenOut, currentRoute, poolsUsed, tokensVisited, currentTokenOut.wrapped);
       poolsUsed[i] = false;
       currentRoute.pop();
       tokensVisited.delete(currentTokenOut.wrapped.address.toLowerCase());

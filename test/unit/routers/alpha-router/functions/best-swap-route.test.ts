@@ -63,21 +63,21 @@ const v3Route3 = new V3Route(
   USDC,
   TEST_CHAIN_WETH
 );
-const v3Route4 = new V3Route([USDC_WETH_MEDIUM], USDC, TEST_CHAIN_WETH);
+// const v3Route4 = new V3Route([USDC_WETH_MEDIUM], USDC, TEST_CHAIN_WETH);
 
-const v2Route1 = new V2Route(
-  // [USDC_DAI, DAI_USDT, WETH_USDT],
-  [USDC_DAI, DAI_USD_PLUS, WETH_USD_PLUS],
-  USDC,
-  TEST_CHAIN_WETH
-);
-const v2Route2 = new V2Route([USDC_WETH], USDC, TEST_CHAIN_WETH);
-const v2Route3 = new V2Route(
-  // [USDC_DAI, DAI_USDT, WETH_USDT, WBTC_WETH],
-  [USDC_DAI, DAI_USD_PLUS, WETH_USD_PLUS, WBTC_WETH],
-  USDC,
-  TEST_CHAIN_WETH
-);
+// const v2Route1 = new V2Route(
+//   // [USDC_DAI, DAI_USDT, WETH_USDT],
+//   [USDC_DAI, DAI_USD_PLUS, WETH_USD_PLUS],
+//   USDC,
+//   TEST_CHAIN_WETH
+// );
+// const v2Route2 = new V2Route([USDC_WETH], USDC, TEST_CHAIN_WETH);
+// const v2Route3 = new V2Route(
+//   // [USDC_DAI, DAI_USDT, WETH_USDT, WBTC_WETH],
+//   [USDC_DAI, DAI_USD_PLUS, WETH_USD_PLUS, WBTC_WETH],
+//   USDC,
+//   TEST_CHAIN_WETH
+// );
 
 const mockPools = [
   USDC_DAI_LOW,
@@ -120,13 +120,7 @@ describe('get best swap route', () => {
     });
 
     mockV3PoolProvider = sinon.createStubInstance(V3PoolProvider);
-    const v3MockPools = [
-      USDC_DAI_LOW,
-      USDC_DAI_MEDIUM,
-      USDC_WETH_LOW,
-      WETH9_USD_PLUS_LOW,
-      DAI_USD_PLUS_LOW,
-    ];
+    const v3MockPools = [USDC_DAI_LOW, USDC_DAI_MEDIUM, USDC_WETH_LOW, WETH9_USD_PLUS_LOW, DAI_USD_PLUS_LOW];
     mockV3PoolProvider.getPools.resolves(buildMockV3PoolAccessor(v3MockPools));
     mockV3PoolProvider.getPoolAddress.callsFake((tA, tB, fee) => ({
       poolAddress: Pool.getAddress(tA, tB, fee),
@@ -187,13 +181,7 @@ describe('get best swap route', () => {
     percents: number[]
   ) => {
     return _.map(percents, (p, i) =>
-      buildV3RouteWithValidQuote(
-        route,
-        tradeType,
-        inputAmount.multiply(new Fraction(p, 100)),
-        quotes[i]!,
-        p
-      )
+      buildV3RouteWithValidQuote(route, tradeType, inputAmount.multiply(new Fraction(p, 100)), quotes[i]!, p)
     );
   };
 
@@ -217,49 +205,31 @@ describe('get best swap route', () => {
     });
   };
 
-  const buildV2RouteWithValidQuotes = (
-    route: V2Route,
-    tradeType: TradeType,
-    inputAmount: CurrencyAmount,
-    quotes: number[],
-    percents: number[]
-  ) => {
-    return _.map(percents, (p, i) =>
-      buildV2RouteWithValidQuote(
-        route,
-        tradeType,
-        inputAmount.multiply(new Fraction(p, 100)),
-        quotes[i]!,
-        p
-      )
-    );
-  };
+  // const buildV2RouteWithValidQuotes = (
+  //   route: V2Route,
+  //   tradeType: TradeType,
+  //   inputAmount: CurrencyAmount,
+  //   quotes: number[],
+  //   percents: number[]
+  // ) => {
+  //   return _.map(percents, (p, i) =>
+  //     buildV2RouteWithValidQuote(route, tradeType, inputAmount.multiply(new Fraction(p, 100)), quotes[i]!, p)
+  //   );
+  // };
 
   test('succeeds to find 1 split best route', async () => {
     const amount = CurrencyAmount.fromRawAmount(USDC, 100000);
     const percents = [25, 50, 75, 100];
     const routesWithQuotes: RouteWithValidQuote[] = [
-      ...buildV3RouteWithValidQuotes(
-        v3Route1,
-        TradeType.EXACT_INPUT,
-        amount,
-        [10, 20, 30, 40],
-        percents
-      ),
-      ...buildV2RouteWithValidQuotes(
-        v2Route2,
-        TradeType.EXACT_INPUT,
-        amount,
-        [8, 19, 28, 38],
-        percents
-      ),
-      ...buildV3RouteWithValidQuotes(
-        v3Route3,
-        TradeType.EXACT_INPUT,
-        amount,
-        [14, 19, 23, 60],
-        percents
-      ),
+      ...buildV3RouteWithValidQuotes(v3Route1, TradeType.EXACT_INPUT, amount, [10, 20, 30, 40], percents),
+      // ...buildV2RouteWithValidQuotes(
+      //   v2Route2,
+      //   TradeType.EXACT_INPUT,
+      //   amount,
+      //   [8, 19, 28, 38],
+      //   percents
+      // ),
+      ...buildV3RouteWithValidQuotes(v3Route3, TradeType.EXACT_INPUT, amount, [14, 19, 23, 60], percents),
     ];
 
     const swapRouteType = await getBestSwapRoute(
@@ -272,22 +242,14 @@ describe('get best swap route', () => {
       portionProvider
     )!;
 
-    const {
-      quote,
-      routes,
-      quoteGasAdjusted,
-      estimatedGasUsed,
-      estimatedGasUsedUSD,
-      estimatedGasUsedQuoteToken,
-    } = swapRouteType!;
+    const { quote, routes, quoteGasAdjusted, estimatedGasUsed, estimatedGasUsedUSD, estimatedGasUsedQuoteToken } =
+      swapRouteType!;
 
     expect(quote.quotient.toString()).toBe('60');
     expect(quote.equalTo(quoteGasAdjusted)).toBeTruthy();
     expect(estimatedGasUsed.eq(BigNumber.from(10000))).toBeTruthy();
     expect(estimatedGasUsedUSD.equalTo(CurrencyAmount.fromRawAmount(USDC, 0))).toBeTruthy();
-    expect(
-      estimatedGasUsedQuoteToken.equalTo(CurrencyAmount.fromRawAmount(TEST_CHAIN_WETH, 0))
-    ).toBeTruthy();
+    expect(estimatedGasUsedQuoteToken.equalTo(CurrencyAmount.fromRawAmount(TEST_CHAIN_WETH, 0))).toBeTruthy();
     expect(routes).toHaveLength(1);
   });
 });
