@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 
-import { ChainId, TradeType } from '@baseswapfi/sdk-core';
+import { ChainId, Token, TradeType } from '@baseswapfi/sdk-core';
 import { AlphaRouter, AlphaRouterParams } from '../../src/routers/alpha-router';
 import { JsonRpcProvider } from '@ethersproject/providers';
 import {
@@ -51,9 +51,21 @@ describe('AlphaRouter', () => {
     //   providerConfig?: ProviderConfig
     // ): Promise<BestSwapRoute | null> {
     // console.log(usdGasTokensByChain[CHAIN_ID]);
-    const amountIn = 100e6;
-    const currencyIn = USDC_NATIVE_BASE;
-    const currencyOut = WRAPPED_NATIVE_CURRENCY[CHAIN_ID];
+    // const amountIn = 100e6;
+    // const currencyIn = USDC_NATIVE_BASE;
+    // const currencyOut = WRAPPED_NATIVE_CURRENCY[CHAIN_ID];
+
+    // ETH-BSWAP test
+
+    const currencyIn = WRAPPED_NATIVE_CURRENCY[CHAIN_ID];
+    const currencyOut = new Token(
+      CHAIN_ID,
+      '0x78a087d713Be963Bf307b18F2Ff8122EF9A63ae9',
+      18,
+      'BSWAP'
+    );
+    const amountIn = 100 ** currencyIn.decimals;
+
     const amount = CurrencyAmount.fromRawAmount(currencyIn, amountIn);
     // const quoteCurrency = null;
     const tradeType = TradeType.EXACT_INPUT;

@@ -10,7 +10,7 @@ import { Position } from '@baseswapfi/v3-sdk2';
 
 import { BigNumber } from '@ethersproject/bignumber';
 import { BaseProvider, JsonRpcProvider } from '@ethersproject/providers';
-import DEFAULT_TOKEN_LIST from '@baseswapfi/default-token-list';
+import DEFAULT_TOKEN_LIST from '@baseswapfi/default-token-list/build/baseswap-default.tokenlist.json';
 import retry from 'async-retry';
 import NodeCache from 'node-cache';
 import _ from 'lodash';
@@ -590,20 +590,25 @@ export class AlphaRouter {
       );
     }
 
-    const valitdatorAddress = getBaseswapContractAddress(
-      this.chainId,
-      'TokenValidator'
-    );
+    // const valitdatorAddress = getBaseswapContractAddress(
+    //   this.chainId,
+    //   'TokenValidator'
+    // );
     if (tokenValidatorProvider) {
       this.tokenValidatorProvider = tokenValidatorProvider;
-    } else if (valitdatorAddress) {
-      this.tokenValidatorProvider = new TokenValidatorProvider(
-        this.chainId,
-        this.multicall2Provider,
-        new NodeJSCache(new NodeCache({ stdTTL: 30000, useClones: false })),
-        valitdatorAddress
-      );
     }
+    // TODO: They only run this on mainnet eth "else if (this.chainId === ChainId.MAINNET)"
+    // Getting validation error so going to remove it now
+
+    // else if (valitdatorAddress) {
+    //   this.tokenValidatorProvider = new TokenValidatorProvider(
+    //     this.chainId,
+    //     this.multicall2Provider,
+    //     new NodeJSCache(new NodeCache({ stdTTL: 30000, useClones: false })),
+    //     valitdatorAddress
+    //   );
+    // }
+
     this.tokenProvider =
       tokenProvider ??
       new CachingTokenProviderWithFallback(

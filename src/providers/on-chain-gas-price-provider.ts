@@ -6,9 +6,6 @@ import { LegacyGasPriceProvider } from './legacy-gas-price-provider';
 import { OP_STACKS_CHAINS } from '../util/chains';
 
 const DEFAULT_EIP_1559_SUPPORTED_CHAINS = [
-  // ChainId.MAINNET,
-  // ChainId.GOERLI,
-  // ChainId.POLYGON_MUMBAI,
   ChainId.ARBITRUM,
   ...OP_STACKS_CHAINS,
 ];
@@ -35,9 +32,15 @@ export class OnChainGasPriceProvider extends IGasPriceProvider {
     requestBlockNumber?: number
   ): Promise<GasPrice> {
     if (this.eipChains.includes(this.chainId)) {
-      return this.eip1559GasPriceProvider.getGasPrice(latestBlockNumber, requestBlockNumber);
+      return this.eip1559GasPriceProvider.getGasPrice(
+        latestBlockNumber,
+        requestBlockNumber
+      );
     }
 
-    return this.legacyGasPriceProvider.getGasPrice(latestBlockNumber, requestBlockNumber);
+    return this.legacyGasPriceProvider.getGasPrice(
+      latestBlockNumber,
+      requestBlockNumber
+    );
   }
 }
