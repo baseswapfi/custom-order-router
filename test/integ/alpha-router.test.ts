@@ -34,13 +34,6 @@ describe('AlphaRouter', () => {
     router = new AlphaRouter(params);
   });
 
-  // it('gets gas price estimates', async () => {
-  //   // const blockNumber = await provider.getBlockNumber();
-  //   // const gasPriceWei = await router.getGasPriceWei(blockNumber, blockNumber);
-  //   // console.log(formatUnits(gasPriceWei));
-  //   // expect(gasPriceWei.gt(0));
-  // });
-
   it('gets quotes', async () => {
     // async getSwapRouteFromChain(
     //   amount: CurrencyAmount,
@@ -58,11 +51,10 @@ describe('AlphaRouter', () => {
     //   providerConfig?: ProviderConfig
     // ): Promise<BestSwapRoute | null> {
     // console.log(usdGasTokensByChain[CHAIN_ID]);
-    const amountIn = 100;
+    const amountIn = 100e6;
     const currencyIn = USDC_NATIVE_BASE;
     const currencyOut = WRAPPED_NATIVE_CURRENCY[CHAIN_ID];
     const amount = CurrencyAmount.fromRawAmount(currencyIn, amountIn);
-    // const protocols = [Protocol.V3];
     // const quoteCurrency = null;
     const tradeType = TradeType.EXACT_INPUT;
     // const routingConfig: AlphaRouterConfig = {};
@@ -78,7 +70,12 @@ describe('AlphaRouter', () => {
         protocols,
       }
     );
-    console.log(quote?.route[0].tokenPath);
-    console.log(quote?.trade.outputAmount.toSignificant());
+    console.log(quote?.route);
+    console.log(`
+    tokenIn:           ${currencyIn.symbol}
+    tokenOut:          ${currencyOut.symbol}
+    amountIn:          ${amountIn}
+    quote amount out:  ${quote?.trade.outputAmount.toSignificant()}
+      `);
   });
 });

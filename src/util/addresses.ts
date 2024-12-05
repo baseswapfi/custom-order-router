@@ -1,4 +1,9 @@
-import { CHAIN_TO_ADDRESSES_MAP, ChainId, Currency, Token } from '@baseswapfi/sdk-core';
+import {
+  CHAIN_TO_ADDRESSES_MAP,
+  ChainId,
+  Currency,
+  Token,
+} from '@baseswapfi/sdk-core';
 import { WRAPPED_NATIVE_CURRENCY } from './chains';
 import { ADDRESS_ZERO } from '@baseswapfi/v3-sdk2';
 
@@ -9,7 +14,8 @@ export const SWAP_ROUTER_02_ADDRESSES = (chainId: number): string => {
   return '';
 };
 
-export const OVM_GASPRICE_ADDRESS = '0x420000000000000000000000000000000000000F';
+export const OVM_GASPRICE_ADDRESS =
+  '0x420000000000000000000000000000000000000F';
 export const ARB_GASINFO_ADDRESS = '0x000000000000000000000000000000000000006C';
 
 export const WETH9: {
@@ -54,7 +60,13 @@ export const WETH9: {
 //   // [ChainId.ZKSYNC]: '0x071Bd2063dF031EDd110E27C6F4CDe50A3DeF2d4',
 // };
 
-export const BEACON_CHAIN_DEPOSIT_ADDRESS = '0x00000000219ab540356cBB839Cbe05303d7705Fa';
+export const NEW_QUOTER_V2_ADDRESSES: AddressMap = {
+  [ChainId.BASE]: '0x220EC69378ceE35C3862A38D2B01f0ec26A0E24C',
+  [ChainId.OPTIMISM]: '0xcd0013Fe2a9389b904aC8Cc22362a067e3d30ede',
+};
+
+export const BEACON_CHAIN_DEPOSIT_ADDRESS =
+  '0x00000000219ab540356cBB839Cbe05303d7705Fa';
 
 export function getAddressLowerCase(currency: Currency): string {
   if (currency.isToken) {

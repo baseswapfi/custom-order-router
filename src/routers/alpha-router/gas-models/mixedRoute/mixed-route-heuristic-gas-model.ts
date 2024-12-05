@@ -9,10 +9,7 @@ import { TPool } from '@baseswapfi/router-sdk/dist/utils/TPool';
 import { WRAPPED_NATIVE_CURRENCY } from '../../../..';
 import { log } from '../../../../util';
 import { CurrencyAmount } from '../../../../util/amounts';
-import {
-  GasFactoryHelper,
-  getV2NativePool,
-} from '../../../../util/gas-factory-helpers';
+import { getV2NativePool } from '../../../../util/gas-factory-helpers';
 import { MixedRouteWithValidQuote } from '../../entities/route-with-valid-quote';
 import {
   BASE_SWAP_COST,
@@ -23,6 +20,7 @@ import {
 import {
   BuildOnChainGasModelFactoryType,
   GasModelProviderConfig,
+  getQuoteThroughNativePool,
   IGasModel,
   IOnChainGasModelFactory,
 } from '../gas-model';
@@ -93,7 +91,7 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory<
       );
 
       /** ------ MARK: USD Logic -------- */
-      const gasCostInTermsOfUSD = GasFactoryHelper.getQuoteThroughNativePool(
+      const gasCostInTermsOfUSD = getQuoteThroughNativePool(
         chainId,
         totalGasCostNativeCurrency,
         usdPool
@@ -104,7 +102,7 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory<
         pools.nativeAndSpecifiedGasTokenV3Pool;
       let gasCostInTermsOfGasToken: CurrencyAmount | undefined = undefined;
       if (nativeAndSpecifiedGasTokenPool) {
-        gasCostInTermsOfGasToken = GasFactoryHelper.getQuoteThroughNativePool(
+        gasCostInTermsOfGasToken = getQuoteThroughNativePool(
           chainId,
           totalGasCostNativeCurrency,
           nativeAndSpecifiedGasTokenPool
@@ -150,12 +148,11 @@ export class MixedRouteHeuristicGasModelFactory extends IOnChainGasModelFactory<
           ? nativeV2Pool
           : nativeV3Pool!;
 
-      const gasCostInTermsOfQuoteToken =
-        GasFactoryHelper.getQuoteThroughNativePool(
-          chainId,
-          totalGasCostNativeCurrency,
-          nativePool
-        );
+      const gasCostInTermsOfQuoteToken = getQuoteThroughNativePool(
+        chainId,
+        totalGasCostNativeCurrency,
+        nativePool
+      );
 
       return {
         gasEstimate: baseGasUse,

@@ -9,12 +9,11 @@ import { Pool } from '@baseswapfi/v3-sdk2';
 
 import { ProviderConfig } from '../../../providers/provider';
 import {
-  DAI_ARBITRUM,
-  DAI_BASE,
+  DAI_ARBITRUM, // TODO: This/these imports are the issue. The providers "module" is undefined when importing on fe
   DAI_MODE,
   DAI_OPTIMISM,
   USDC_ARBITRUM,
-  USDC_BASE,
+  USDC_BASE, // TODO: Same here with this
   USDC_MODE,
   USDC_NATIVE_ARBITRUM,
   USDC_NATIVE_BASE,
@@ -22,10 +21,10 @@ import {
   USDC_OPTIMISM,
   USDC_SONEIUM_TESTNET,
   USDT_ARBITRUM,
-  USDT_BASE,
   USDT_MODE,
   USDT_OPTIMISM,
 } from '../../../providers/token-provider';
+
 import { IV2PoolProvider } from '../../../providers/v2/pool-provider';
 import {
   ArbitrumGasData,
@@ -47,16 +46,16 @@ export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
   [ChainId.ARBITRUM]: [
     DAI_ARBITRUM,
     USDC_ARBITRUM,
-    USDT_ARBITRUM,
     USDC_NATIVE_ARBITRUM,
+    USDT_ARBITRUM,
   ],
   [ChainId.OPTIMISM]: [
     DAI_OPTIMISM,
     USDC_OPTIMISM,
-    USDT_OPTIMISM,
     USDC_NATIVE_OPTIMISM,
+    USDT_OPTIMISM,
   ],
-  [ChainId.BASE]: [DAI_BASE, USDC_BASE, USDT_BASE, USDC_NATIVE_BASE],
+  [ChainId.BASE]: [USDC_BASE, USDC_NATIVE_BASE],
   [ChainId.MODE]: [DAI_MODE, USDC_MODE, USDT_MODE],
   // [ChainId.SONIC_TESTNET]: [USDC_SONIC_TESTNET],
   [ChainId.SONEIUM_TESTNET]: [USDC_SONEIUM_TESTNET],
@@ -203,11 +202,11 @@ export abstract class IOnChainGasModelFactory<
 // Determines if native currency is token0
 // Gets the native price of the pool, dependent on 0 or 1
 // quotes across the pool
-export function getQuoteThroughNativePool(
+export const getQuoteThroughNativePool = (
   chainId: ChainId,
   nativeTokenAmount: CurrencyAmountRaw<Token>,
   nativeTokenPool: Pool | Pair
-): CurrencyAmount {
+): CurrencyAmount => {
   const nativeCurrency = WRAPPED_NATIVE_CURRENCY[chainId];
   const isToken0 = nativeTokenPool.token0.equals(nativeCurrency);
   // returns mid price in terms of the native currency (the ratio of token/nativeToken)
@@ -216,4 +215,4 @@ export function getQuoteThroughNativePool(
     : nativeTokenPool.token1Price;
   // return gas cost in terms of the non native currency
   return nativeTokenPrice.quote(nativeTokenAmount) as CurrencyAmount;
-}
+};

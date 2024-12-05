@@ -10,14 +10,13 @@ import { log, WRAPPED_NATIVE_CURRENCY } from '../../../../util';
 import { CurrencyAmount } from '../../../../util/amounts';
 import {
   calculateL1GasFeesHelper,
-  GasFactoryHelper,
   getV2NativePool,
 } from '../../../../util/gas-factory-helpers';
 import { V2RouteWithValidQuote } from '../../entities/route-with-valid-quote';
 import {
   BuildV2GasModelFactoryType,
   GasModelProviderConfig,
-  // getQuoteThroughNativePool,
+  getQuoteThroughNativePool,
   IGasModel,
   IV2GasModelFactory,
   usdGasTokensByChain,
@@ -137,7 +136,7 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
         );
 
         /** ------ MARK: USD logic  -------- */
-        const gasCostInTermsOfUSD = GasFactoryHelper.getQuoteThroughNativePool(
+        const gasCostInTermsOfUSD = getQuoteThroughNativePool(
           chainId,
           gasCostInEth,
           usdPool
@@ -146,7 +145,7 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
         /** ------ MARK: Conditional logic run if gasToken is specified  -------- */
         let gasCostInTermsOfGasToken: CurrencyAmount | undefined = undefined;
         if (nativeAndSpecifiedGasTokenPool) {
-          gasCostInTermsOfGasToken = GasFactoryHelper.getQuoteThroughNativePool(
+          gasCostInTermsOfGasToken = getQuoteThroughNativePool(
             chainId,
             gasCostInEth,
             nativeAndSpecifiedGasTokenPool
@@ -182,12 +181,11 @@ export class V2HeuristicGasModelFactory extends IV2GasModelFactory {
           };
         }
 
-        const gasCostInTermsOfQuoteToken =
-          GasFactoryHelper.getQuoteThroughNativePool(
-            chainId,
-            gasCostInEth,
-            ethPool
-          );
+        const gasCostInTermsOfQuoteToken = getQuoteThroughNativePool(
+          chainId,
+          gasCostInEth,
+          ethPool
+        );
 
         return {
           gasEstimate: gasUse,

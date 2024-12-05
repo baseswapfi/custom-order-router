@@ -20,6 +20,7 @@ export * from './token-provider';
 export * from './token-validator-provider';
 export * from './uri-subgraph-provider';
 export * from './caching/route';
+
 export * from './v2/caching-pool-provider';
 export * from './v2/caching-subgraph-provider';
 export * from './v2/pool-provider';
@@ -28,6 +29,7 @@ export * from './v2/static-subgraph-provider';
 export * from './v2/subgraph-provider';
 export * from './v2/subgraph-provider-with-fallback';
 export * from './v2/uri-subgraph-provider';
+
 export * from './v3/caching-pool-provider';
 export * from './v3/caching-subgraph-provider';
 export * from './v3/pool-provider';

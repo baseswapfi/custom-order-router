@@ -31,7 +31,7 @@ export abstract class PoolProvider<
   TPoolAccessor
 > {
   /**
-   * Creates an instance of V3PoolProvider.
+   * Creates an instance of V4PoolProvider.
    * @param chainId The chain id to use.
    * @param multicall2Provider The multicall provider to use to get the pools.
    * @param retryOptions The retry options for each call to the multicall.

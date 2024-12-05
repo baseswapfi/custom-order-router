@@ -2,7 +2,12 @@ import { JsonRpcProvider } from '@ethersproject/providers';
 import { ChainId, TradeType } from '@baseswapfi/sdk-core';
 import { BigNumber } from 'ethers/lib/ethers';
 
-import { GasModelProviderConfig, SwapOptions, SwapRoute, SwapType } from '../routers';
+import {
+  GasModelProviderConfig,
+  SwapOptions,
+  SwapRoute,
+  SwapType,
+} from '../routers';
 import { Erc20__factory } from '../types/other/factories/Erc20__factory';
 import { Permit2__factory } from '../types/other/factories/Permit2__factory';
 import { CurrencyAmount, log, SWAP_ROUTER_02_ADDRESSES } from '../util';
@@ -59,16 +64,29 @@ export abstract class Simulator {
     quote: CurrencyAmount,
     providerConfig?: GasModelProviderConfig
   ): Promise<SwapRoute> {
-    const neededBalance = swapRoute.trade.tradeType == TradeType.EXACT_INPUT ? amount : quote;
+    const neededBalance =
+      swapRoute.trade.tradeType == TradeType.EXACT_INPUT ? amount : quote;
     if (
       // we assume we always have enough eth mainnet balance because we use beacon address later
       // @ts-ignore
       (neededBalance.currency.isNative && this.chainId == 1) ||
-      (await this.userHasSufficientBalance(fromAddress, swapRoute.trade.tradeType, amount, quote))
+      (await this.userHasSufficientBalance(
+        fromAddress,
+        swapRoute.trade.tradeType,
+        amount,
+        quote
+      ))
     ) {
-      log.info('User has sufficient balance to simulate. Simulating transaction.');
+      log.info(
+        'User has sufficient balance to simulate. Simulating transaction.'
+      );
       try {
-        return this.simulateTransaction(fromAddress, swapOptions, swapRoute, providerConfig);
+        return this.simulateTransaction(
+          fromAddress,
+          swapOptions,
+          swapRoute,
+          providerConfig
+        );
       } catch (e) {
         log.error({ e }, 'Error simulating transaction');
         return {
@@ -104,11 +122,16 @@ export abstract class Simulator {
       if (neededBalance.currency.isNative) {
         balance = await this.provider.getBalance(fromAddress);
       } else {
-        const tokenContract = Erc20__factory.connect(neededBalance.currency.address, this.provider);
+        const tokenContract = Erc20__factory.connect(
+          neededBalance.currency.address,
+          this.provider
+        );
         balance = await tokenContract.balanceOf(fromAddress);
       }
 
-      const hasBalance = balance.gte(BigNumber.from(neededBalance.quotient.toString()));
+      const hasBalance = balance.gte(
+        BigNumber.from(neededBalance.quotient.toString())
+      );
       log.info(
         {
           fromAddress,
@@ -133,7 +156,10 @@ export abstract class Simulator {
     provider: JsonRpcProvider
   ): Promise<boolean> {
     // Check token has approved Permit2 more than expected amount.
-    const tokenContract = Erc20__factory.connect(inputAmount.currency.wrapped.address, provider);
+    const tokenContract = Erc20__factory.connect(
+      inputAmount.currency.wrapped.address,
+      provider
+    );
 
     if (swapOptions.type == SwapType.UNIVERSAL_ROUTER) {
       const permit2Allowance = await tokenContract.allowance(
@@ -150,7 +176,9 @@ export abstract class Simulator {
           },
           'Permit was provided for simulation on UR, checking that Permit2 has been approved.'
         );
-        return permit2Allowance.gte(BigNumber.from(inputAmount.quotient.toString()));
+        return permit2Allowance.gte(
+          BigNumber.from(inputAmount.quotient.toString())
+        );
       }
 
       // Check UR has been approved from Permit2.
@@ -170,7 +198,8 @@ export abstract class Simulator {
       const inputAmountBN = BigNumber.from(inputAmount.quotient.toString());
 
       const permit2Approved = permit2Allowance.gte(inputAmountBN);
-      const universalRouterApproved = universalRouterAllowance.gte(inputAmountBN);
+      const universalRouterApproved =
+        universalRouterAllowance.gte(inputAmountBN);
       const expirationValid = tokenExpiration > nowTimestampS;
       log.info(
         {
@@ -201,7 +230,9 @@ export abstract class Simulator {
         fromAddress,
         SWAP_ROUTER_02_ADDRESSES(this.chainId)
       );
-      const hasAllowance = allowance.gte(BigNumber.from(inputAmount.quotient.toString()));
+      const hasAllowance = allowance.gte(
+        BigNumber.from(inputAmount.quotient.toString())
+      );
       log.info(
         {
           hasAllowance,

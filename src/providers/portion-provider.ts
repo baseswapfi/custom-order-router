@@ -2,7 +2,12 @@ import { BigNumber } from '@ethersproject/bignumber';
 import { ZERO } from '@baseswapfi/router-sdk';
 import { Fraction, TradeType } from '@baseswapfi/sdk-core';
 
-import { RouteWithValidQuote, SwapOptions, SwapOptionsUniversalRouter, SwapType } from '../routers';
+import {
+  RouteWithValidQuote,
+  SwapOptions,
+  SwapOptionsUniversalRouter,
+  SwapType,
+} from '../routers';
 import { CurrencyAmount } from '../util';
 
 import { ProviderConfig } from './provider';
@@ -134,7 +139,10 @@ export class PortionProvider implements IPortionProvider {
     const swapConfigUniversalRouter = swapConfig as SwapOptionsUniversalRouter;
     switch (tradeType) {
       case TradeType.EXACT_INPUT:
-        if (swapConfigUniversalRouter.fee && swapConfigUniversalRouter.fee.fee.greaterThan(ZERO)) {
+        if (
+          swapConfigUniversalRouter.fee &&
+          swapConfigUniversalRouter.fee.fee.greaterThan(ZERO)
+        ) {
           return tokenOutAmount.multiply(swapConfigUniversalRouter.fee.fee);
         }
 

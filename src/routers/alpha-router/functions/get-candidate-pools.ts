@@ -18,6 +18,7 @@ import {
   USDC_ARBITRUM,
   USDC_BASE,
   USDC_MODE,
+  USDC_NATIVE_ARBITRUM,
   USDC_NATIVE_BASE,
   USDC_OPTIMISM,
   USDC_SONEIUM_TESTNET,
@@ -149,6 +150,7 @@ const baseTokensByChain: { [chainId in ChainId]?: Token[] } = {
   ],
   [ChainId.ARBITRUM]: [
     DAI_ARBITRUM,
+    USDC_NATIVE_ARBITRUM,
     USDC_ARBITRUM,
     WBTC_ARBITRUM,
     USDT_ARBITRUM,

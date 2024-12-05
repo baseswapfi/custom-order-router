@@ -11,7 +11,13 @@ import {
   IV3SubgraphProvider,
   TokenValidationResult,
 } from '../../../providers';
-import { CurrencyAmount, log, metric, MetricLoggerUnit, routeToString } from '../../../util';
+import {
+  CurrencyAmount,
+  log,
+  metric,
+  MetricLoggerUnit,
+  routeToString,
+} from '../../../util';
 import { V3Route } from '../../router';
 import { AlphaRouterConfig } from '../alpha-router';
 import { V3RouteWithValidQuote } from '../entities';
@@ -40,7 +46,13 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route, Token> {
     blockedTokenListProvider?: ITokenListProvider,
     tokenValidatorProvider?: ITokenValidatorProvider
   ) {
-    super(tokenProvider, chainId, Protocol.V3, blockedTokenListProvider, tokenValidatorProvider);
+    super(
+      tokenProvider,
+      chainId,
+      Protocol.V3,
+      blockedTokenListProvider,
+      tokenValidatorProvider
+    );
     this.v3SubgraphProvider = v3SubgraphProvider;
     this.v3PoolProvider = v3PoolProvider;
     this.onChainQuoteProvider = onChainQuoteProvider;
@@ -63,7 +75,10 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route, Token> {
     // Drop any pools that contain fee on transfer tokens (not supported by v3) or have issues with being transferred.
     const pools = await this.applyTokenValidatorToPools(
       poolsRaw,
-      (token: Currency, tokenValidation: TokenValidationResult | undefined): boolean => {
+      (
+        token: Currency,
+        tokenValidation: TokenValidationResult | undefined
+      ): boolean => {
         // If there is no available validation result we assume the token is fine.
         if (!tokenValidation) {
           return false;
@@ -90,7 +105,12 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route, Token> {
 
     // Given all our candidate pools, compute all the possible ways to route from tokenIn to tokenOut.
     const { maxSwapsPerPath } = routingConfig;
-    const routes = computeAllV3Routes(tokenIn, tokenOut, pools, maxSwapsPerPath);
+    const routes = computeAllV3Routes(
+      tokenIn,
+      tokenOut,
+      pools,
+      maxSwapsPerPath
+    );
 
     metric.putMetric(
       'V3GetRoutesLoad',
@@ -118,7 +138,9 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route, Token> {
     log.info('Starting to get V3 quotes');
 
     if (gasModel === undefined) {
-      throw new Error('GasModel for V3RouteWithValidQuote is required to getQuotes');
+      throw new Error(
+        'GasModel for V3RouteWithValidQuote is required to getQuotes'
+      );
     }
 
     if (routes.length == 0) {
@@ -128,17 +150,29 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route, Token> {
     // For all our routes, and all the fractional amounts, fetch quotes on-chain.
     const quoteFn =
       tradeType == TradeType.EXACT_INPUT
-        ? this.onChainQuoteProvider.getQuotesManyExactIn.bind(this.onChainQuoteProvider)
-        : this.onChainQuoteProvider.getQuotesManyExactOut.bind(this.onChainQuoteProvider);
+        ? this.onChainQuoteProvider.getQuotesManyExactIn.bind(
+            this.onChainQuoteProvider
+          )
+        : this.onChainQuoteProvider.getQuotesManyExactOut.bind(
+            this.onChainQuoteProvider
+          );
 
     const beforeQuotes = Date.now();
     log.info(
       `Getting quotes for V3 for ${routes.length} routes with ${amounts.length} amounts per route.`
     );
 
-    const { routesWithQuotes } = await quoteFn<V3Route>(amounts, routes, routingConfig);
+    const { routesWithQuotes } = await quoteFn<V3Route>(
+      amounts,
+      routes,
+      routingConfig
+    );
 
-    metric.putMetric('V3QuotesLoad', Date.now() - beforeQuotes, MetricLoggerUnit.Milliseconds);
+    metric.putMetric(
+      'V3QuotesLoad',
+      Date.now() - beforeQuotes,
+      MetricLoggerUnit.Milliseconds
+    );
 
     metric.putMetric(
       'V3QuotesFetched',
@@ -156,10 +190,20 @@ export class V3Quoter extends BaseQuoter<V3CandidatePools, V3Route, Token> {
       for (let i = 0; i < quotes.length; i++) {
         const percent = percents[i]!;
         const amountQuote = quotes[i]!;
-        const { quote, amount, sqrtPriceX96AfterList, initializedTicksCrossedList, gasEstimate } =
-          amountQuote;
+        const {
+          quote,
+          amount,
+          sqrtPriceX96AfterList,
+          initializedTicksCrossedList,
+          gasEstimate,
+        } = amountQuote;
 
-        if (!quote || !sqrtPriceX96AfterList || !initializedTicksCrossedList || !gasEstimate) {
+        if (
+          !quote ||
+          !sqrtPriceX96AfterList ||
+          !initializedTicksCrossedList ||
+          !gasEstimate
+        ) {
           log.debug(
             {
               route: routeToString(route),

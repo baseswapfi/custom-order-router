@@ -3,10 +3,7 @@ import { BaseProvider } from '@ethersproject/providers';
 import { ChainId, Price } from '@baseswapfi/sdk-core';
 import { Pool } from '@baseswapfi/v3-sdk2';
 import { CurrencyAmount, log, WRAPPED_NATIVE_CURRENCY } from '../../../util';
-import {
-  calculateL1GasFeesHelper,
-  GasFactoryHelper,
-} from '../../../util/gas-factory-helpers';
+import { calculateL1GasFeesHelper } from '../../../util/gas-factory-helpers';
 import { V3RouteWithValidQuote } from '../entities';
 import {
   BASE_SWAP_COST,
@@ -19,6 +16,7 @@ import {
 import {
   BuildOnChainGasModelFactoryType,
   GasModelProviderConfig,
+  getQuoteThroughNativePool,
   IGasModel,
   IOnChainGasModelFactory,
 } from './gas-model';
@@ -99,7 +97,7 @@ export abstract class TickBasedHeuristicGasModelFactory<
       // We only need to go through V2 and V3 USD pools for now,
       // because v4 pools don't have deep liquidity yet.
       // If one day, we see v3 usd pools have much deeper liquidity than v2/v3 usd pools, then we will add v4 pools for gas cost
-      const gasCostInTermsOfUSD = GasFactoryHelper.getQuoteThroughNativePool(
+      const gasCostInTermsOfUSD = getQuoteThroughNativePool(
         chainId,
         totalGasCostNativeCurrency,
         usdPool
@@ -114,7 +112,7 @@ export abstract class TickBasedHeuristicGasModelFactory<
         // We only need to go through V2 and V3 USD pools for now,
         // because v4 pools don't have deep liquidity yet.
         // If one day, we see v3 usd pools have much deeper liquidity than v2/v3 usd pools, then we will add v4 pools for gas cost
-        gasCostInTermsOfGasToken = GasFactoryHelper.getQuoteThroughNativePool(
+        gasCostInTermsOfGasToken = getQuoteThroughNativePool(
           chainId,
           totalGasCostNativeCurrency,
           nativeAndSpecifiedGasTokenPool
@@ -147,7 +145,7 @@ export abstract class TickBasedHeuristicGasModelFactory<
         // We only need to go through V2 and V3 USD pools for now,
         // because v4 pools don't have deep liquidity yet.
         // If one day, we see v3 usd pools have much deeper liquidity than v2/v3 usd pools, then we will add v4 pools for gas cost
-        gasCostInTermsOfQuoteToken = GasFactoryHelper.getQuoteThroughNativePool(
+        gasCostInTermsOfQuoteToken = getQuoteThroughNativePool(
           chainId,
           totalGasCostNativeCurrency,
           nativeAndQuoteTokenPool

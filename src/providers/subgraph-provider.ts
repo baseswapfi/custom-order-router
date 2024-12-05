@@ -1,12 +1,14 @@
 import { ChainId, Token } from '@baseswapfi/sdk-core';
-import { ProviderConfig } from './provider';
 import { gql, GraphQLClient } from 'graphql-request';
-import { log, metric } from '../util';
 import { Protocol } from '@baseswapfi/router-sdk';
 import retry from 'async-retry';
 import Timeout from 'await-timeout';
 import _ from 'lodash';
+
 import { SubgraphPool } from '../routers/alpha-router/functions/get-candidate-pools';
+import { log, metric } from '../util';
+
+import { ProviderConfig } from './provider';
 
 export interface ISubgraphProvider<TSubgraphPool extends SubgraphPool> {
   getPools(
@@ -78,7 +80,9 @@ export abstract class SubgraphProvider<
     providerConfig?: ProviderConfig
   ): Promise<TSubgraphPool[]> {
     const beforeAll = Date.now();
-    let blockNumber = providerConfig?.blockNumber ? await providerConfig.blockNumber : undefined;
+    let blockNumber = providerConfig?.blockNumber
+      ? await providerConfig.blockNumber
+      : undefined;
 
     const query = gql`
       ${this.subgraphQuery(blockNumber)}
@@ -87,8 +91,12 @@ export abstract class SubgraphProvider<
     let pools: TRawSubgraphPool[] = [];
 
     log.info(
-      `Getting ${this.protocol} pools from the subgraph with page size ${PAGE_SIZE}${
-        providerConfig?.blockNumber ? ` as of block ${providerConfig?.blockNumber}` : ''
+      `Getting ${
+        this.protocol
+      } pools from the subgraph with page size ${PAGE_SIZE}${
+        providerConfig?.blockNumber
+          ? ` as of block ${providerConfig?.blockNumber}`
+          : ''
       }.`
     );
 
@@ -142,7 +150,9 @@ export abstract class SubgraphProvider<
         try {
           const getPoolsPromise = getPools();
           const timerPromise = timeout.set(this.timeout).then(() => {
-            throw new Error(`Timed out getting pools from subgraph: ${this.timeout}`);
+            throw new Error(
+              `Timed out getting pools from subgraph: ${this.timeout}`
+            );
           });
           pools = await Promise.race([getPoolsPromise, timerPromise]);
           return;
@@ -157,7 +167,11 @@ export abstract class SubgraphProvider<
         retries: this.retries,
         onRetry: (err, retry) => {
           retries += 1;
-          if (this.rollback && blockNumber && _.includes(err.message, 'indexed up to')) {
+          if (
+            this.rollback &&
+            blockNumber &&
+            _.includes(err.message, 'indexed up to')
+          ) {
             metric.putMetric(
               `${this.protocol}SubgraphProvider.chain_${this.chainId}.getPools.indexError`,
               1
@@ -172,7 +186,10 @@ export abstract class SubgraphProvider<
             1
           );
           pools = [];
-          log.info({ err }, `Failed to get pools from subgraph. Retry attempt: ${retry}`);
+          log.info(
+            { err },
+            `Failed to get pools from subgraph. Retry attempt: ${retry}`
+          );
         },
       }
     );
@@ -186,7 +203,8 @@ export abstract class SubgraphProvider<
       (pool) =>
         parseInt(pool.liquidity) > 0 ||
         parseFloat(pool.totalValueLockedETH) > this.trackedEthThreshold ||
-        parseFloat(pool.totalValueLockedUSDUntracked) > this.untrackedUsdThreshold
+        parseFloat(pool.totalValueLockedUSDUntracked) >
+          this.untrackedUsdThreshold
     );
     metric.putMetric(
       `${this.protocol}SubgraphProvider.chain_${this.chainId}.getPools.untracked.length`,
@@ -220,7 +238,10 @@ export abstract class SubgraphProvider<
       `${this.protocol}SubgraphProvider.chain_${this.chainId}.getPools.filter.percent`,
       (poolsSanitized.length / pools.length) * 100
     );
-    metric.putMetric(`${this.protocol}SubgraphProvider.chain_${this.chainId}.getPools`, 1);
+    metric.putMetric(
+      `${this.protocol}SubgraphProvider.chain_${this.chainId}.getPools`,
+      1
+    );
     metric.putMetric(
       `${this.protocol}SubgraphProvider.chain_${this.chainId}.getPools.latency`,
       Date.now() - beforeAll
@@ -235,5 +256,7 @@ export abstract class SubgraphProvider<
 
   protected abstract subgraphQuery(blockNumber?: number): string;
 
-  protected abstract mapSubgraphPool(rawSubgraphPool: TRawSubgraphPool): TSubgraphPool;
+  protected abstract mapSubgraphPool(
+    rawSubgraphPool: TRawSubgraphPool
+  ): TSubgraphPool;
 }

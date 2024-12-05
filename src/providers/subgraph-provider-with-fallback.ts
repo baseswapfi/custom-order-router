@@ -5,8 +5,9 @@ import { log } from '../util';
 import { ProviderConfig } from './provider';
 import { ISubgraphProvider } from './subgraph-provider';
 
-export abstract class SubgraphProviderWithFallBacks<TSubgraphPool extends SubgraphPool>
-  implements ISubgraphProvider<TSubgraphPool>
+export abstract class SubgraphProviderWithFallBacks<
+  TSubgraphPool extends SubgraphPool
+> implements ISubgraphProvider<TSubgraphPool>
 {
   protected constructor(
     private fallbacks: ISubgraphProvider<TSubgraphPool>[],
@@ -21,10 +22,16 @@ export abstract class SubgraphProviderWithFallBacks<TSubgraphPool extends Subgra
     for (let i = 0; i < this.fallbacks.length; i++) {
       const provider = this.fallbacks[i]!;
       try {
-        const pools = await provider.getPools(tokenIn, tokenOut, providerConfig);
+        const pools = await provider.getPools(
+          tokenIn,
+          tokenOut,
+          providerConfig
+        );
         return pools;
       } catch (err) {
-        log.info(`Failed to get subgraph pools for ${this.protocol} from fallback #${i}`);
+        log.info(
+          `Failed to get subgraph pools for ${this.protocol} from fallback #${i}`
+        );
       }
     }
 

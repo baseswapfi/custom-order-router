@@ -1,4 +1,4 @@
-import { Currency, Token } from '@baseswapfi/sdk-core';
+import { Token } from '@baseswapfi/sdk-core';
 import { Pair } from '@baseswapfi/v2-sdk';
 import { Pool as V3Pool } from '@baseswapfi/v3-sdk2';
 
@@ -6,7 +6,12 @@ import { log } from '../../../util/log';
 import { poolToString, routeToString } from '../../../util/routes';
 import { MixedRoute, SupportedRoutes, V2Route, V3Route } from '../../router';
 
-export function computeAllV3Routes(tokenIn: Token, tokenOut: Token, pools: V3Pool[], maxHops: number): V3Route[] {
+export function computeAllV3Routes(
+  tokenIn: Token,
+  tokenOut: Token,
+  pools: V3Pool[],
+  maxHops: number
+): V3Route[] {
   return computeAllRoutes<V3Pool, V3Route>(
     tokenIn,
     tokenOut,
@@ -18,7 +23,12 @@ export function computeAllV3Routes(tokenIn: Token, tokenOut: Token, pools: V3Poo
   );
 }
 
-export function computeAllV2Routes(tokenIn: Token, tokenOut: Token, pools: Pair[], maxHops: number): V2Route[] {
+export function computeAllV2Routes(
+  tokenIn: Token,
+  tokenOut: Token,
+  pools: Pair[],
+  maxHops: number
+): V2Route[] {
   return computeAllRoutes<Pair, V2Route>(
     tokenIn,
     tokenOut,
@@ -47,11 +57,17 @@ export function computeAllMixedRoutes(
   );
   /// filter out pure v3 and v2 routes
   return routesRaw.filter((route) => {
-    return !route.pools.every((pool) => pool instanceof V3Pool) && !route.pools.every((pool) => pool instanceof Pair);
+    return (
+      !route.pools.every((pool) => pool instanceof V3Pool) &&
+      !route.pools.every((pool) => pool instanceof Pair)
+    );
   });
 }
 
-export function computeAllRoutes<TPool extends Pair | V3Pool, TRoute extends SupportedRoutes>(
+export function computeAllRoutes<
+  TPool extends Pair | V3Pool,
+  TRoute extends SupportedRoutes
+>(
   tokenIn: Token,
   tokenOut: Token,
   buildRoute: (route: TPool[], tokenIn: Token, tokenOut: Token) => TRoute,
@@ -73,7 +89,10 @@ export function computeAllRoutes<TPool extends Pair | V3Pool, TRoute extends Sup
       return;
     }
 
-    if (currentRoute.length > 0 && currentRoute[currentRoute.length - 1]!.involvesToken(tokenOut)) {
+    if (
+      currentRoute.length > 0 &&
+      currentRoute[currentRoute.length - 1]!.involvesToken(tokenOut)
+    ) {
       routes.push(buildRoute([...currentRoute], tokenIn, tokenOut));
       return;
     }
@@ -90,7 +109,9 @@ export function computeAllRoutes<TPool extends Pair | V3Pool, TRoute extends Sup
         continue;
       }
 
-      const currentTokenOut = curPool.token0.equals(previousTokenOut) ? curPool.token1 : curPool.token0;
+      const currentTokenOut = curPool.token0.equals(previousTokenOut)
+        ? curPool.token1
+        : curPool.token0;
 
       // TODO: ROUTE-217 - Support native currency routing in V4
       if (tokensVisited.has(currentTokenOut.wrapped.address.toLowerCase())) {
@@ -100,14 +121,27 @@ export function computeAllRoutes<TPool extends Pair | V3Pool, TRoute extends Sup
       tokensVisited.add(currentTokenOut.wrapped.address.toLowerCase());
       currentRoute.push(curPool);
       poolsUsed[i] = true;
-      computeRoutes(tokenIn, tokenOut, currentRoute, poolsUsed, tokensVisited, currentTokenOut.wrapped);
+      computeRoutes(
+        tokenIn,
+        tokenOut,
+        currentRoute,
+        poolsUsed,
+        tokensVisited,
+        currentTokenOut.wrapped
+      );
       poolsUsed[i] = false;
       currentRoute.pop();
       tokensVisited.delete(currentTokenOut.wrapped.address.toLowerCase());
     }
   };
 
-  computeRoutes(tokenIn, tokenOut, [], poolsUsed, new Set([tokenIn.address.toLowerCase()]));
+  computeRoutes(
+    tokenIn,
+    tokenOut,
+    [],
+    poolsUsed,
+    new Set([tokenIn.address.toLowerCase()])
+  );
 
   log.info(
     {
