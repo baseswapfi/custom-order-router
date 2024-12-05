@@ -65,7 +65,8 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
     private untrackedUsdThreshold = Number.MAX_VALUE,
     private subgraphUrlOverride?: string
   ) {
-    const subgraphUrl = this.subgraphUrlOverride ?? V2_SUBGRAPH_URL_MAP[this.chainId];
+    const subgraphUrl =
+      this.subgraphUrlOverride ?? V2_SUBGRAPH_URL_MAP[this.chainId];
     if (!subgraphUrl) {
       throw new Error(`No subgraph url for chain id: ${this.chainId}`);
     }
@@ -78,7 +79,9 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
     providerConfig?: ProviderConfig
   ): Promise<V2SubgraphPool[]> {
     const beforeAll = Date.now();
-    let blockNumber = providerConfig?.blockNumber ? await providerConfig.blockNumber : undefined;
+    let blockNumber = providerConfig?.blockNumber
+      ? await providerConfig.blockNumber
+      : undefined;
     // Due to limitations with the Subgraph API this is the only way to parameterize the query.
     const query2 = gql`
         query getPools($pageSize: Int!, $id: String) {
@@ -102,7 +105,9 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
 
     log.info(
       `Getting V2 pools from the subgraph with page size ${this.pageSize}${
-        providerConfig?.blockNumber ? ` as of block ${providerConfig?.blockNumber}` : ''
+        providerConfig?.blockNumber
+          ? ` as of block ${providerConfig?.blockNumber}`
+          : ''
       }.`
     );
 
@@ -180,7 +185,9 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
         try {
           const getPoolsPromise = getPools();
           const timerPromise = timeout.set(this.timeout).then(() => {
-            throw new Error(`Timed out getting pools from subgraph: ${this.timeout}`);
+            throw new Error(
+              `Timed out getting pools from subgraph: ${this.timeout}`
+            );
           });
           pools = await Promise.race([getPoolsPromise, timerPromise]);
           return;
@@ -195,21 +202,37 @@ export class V2SubgraphProvider implements IV2SubgraphProvider {
         retries: this.retries,
         onRetry: (err, retry) => {
           outerRetries += 1;
-          if (this.rollback && blockNumber && _.includes(err.message, 'indexed up to')) {
-            metric.putMetric(`V2SubgraphProvider.chain_${this.chainId}.getPools.indexError`, 1);
+          if (
+            this.rollback &&
+            blockNumber &&
+            _.includes(err.message, 'indexed up to')
+          ) {
+            metric.putMetric(
+              `V2SubgraphProvider.chain_${this.chainId}.getPools.indexError`,
+              1
+            );
             blockNumber = blockNumber - 10;
             log.info(
               `Detected subgraph indexing error. Rolled back block number to: ${blockNumber}`
             );
           }
-          metric.putMetric(`V2SubgraphProvider.chain_${this.chainId}.getPools.timeout`, 1);
+          metric.putMetric(
+            `V2SubgraphProvider.chain_${this.chainId}.getPools.timeout`,
+            1
+          );
           pools = [];
-          log.info({ err }, `Failed to get pools from subgraph. Retry attempt: ${retry}`);
+          log.info(
+            { err },
+            `Failed to get pools from subgraph. Retry attempt: ${retry}`
+          );
         },
       }
     );
 
-    metric.putMetric(`V2SubgraphProvider.chain_${this.chainId}.getPools.retries`, outerRetries);
+    metric.putMetric(
+      `V2SubgraphProvider.chain_${this.chainId}.getPools.retries`,
+      outerRetries
+    );
 
     // Filter pools that have tracked reserve ETH less than threshold.
     // trackedReserveETH filters pools that do not involve a pool from this allowlist:

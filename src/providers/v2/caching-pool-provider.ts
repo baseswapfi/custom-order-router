@@ -15,7 +15,8 @@ import { IV2PoolProvider, V2PoolAccessor } from './pool-provider';
  * @class CachingV2PoolProvider
  */
 export class CachingV2PoolProvider implements IV2PoolProvider {
-  private POOL_KEY = (chainId: ChainId, address: string) => `pool-${chainId}-${address}`;
+  private POOL_KEY = (chainId: ChainId, address: string) =>
+    `pool-${chainId}-${address}`;
 
   /**
    * Creates an instance of CachingV3PoolProvider.
@@ -44,7 +45,10 @@ export class CachingV2PoolProvider implements IV2PoolProvider {
     const blockNumber = await providerConfig?.blockNumber;
 
     for (const [tokenA, tokenB] of tokenPairs) {
-      const { poolAddress, token0, token1 } = this.getPoolAddress(tokenA, tokenB);
+      const { poolAddress, token0, token1 } = this.getPoolAddress(
+        tokenA,
+        tokenB
+      );
 
       if (poolAddressSet.has(poolAddress)) {
         continue;
@@ -52,7 +56,9 @@ export class CachingV2PoolProvider implements IV2PoolProvider {
 
       poolAddressSet.add(poolAddress);
 
-      const cachedPool = await this.cache.get(this.POOL_KEY(this.chainId, poolAddress));
+      const cachedPool = await this.cache.get(
+        this.POOL_KEY(this.chainId, poolAddress)
+      );
 
       if (cachedPool) {
         // If a block was specified by the caller, ensure that the result in our cache matches the
@@ -74,7 +80,10 @@ export class CachingV2PoolProvider implements IV2PoolProvider {
           Object.values(poolAddressToPool),
           (p) => p.token0.symbol + ' ' + p.token1.symbol
         ),
-        poolsToGetTokenPairs: _.map(poolsToGetTokenPairs, (t) => t[0].symbol + ' ' + t[1].symbol),
+        poolsToGetTokenPairs: _.map(
+          poolsToGetTokenPairs,
+          (t) => t[0].symbol + ' ' + t[1].symbol
+        ),
       },
       `Found ${
         Object.keys(poolAddressToPool).length
@@ -84,10 +93,13 @@ export class CachingV2PoolProvider implements IV2PoolProvider {
     );
 
     if (poolsToGetAddresses.length > 0) {
-      const poolAccessor = await this.poolProvider.getPools(poolsToGetTokenPairs, {
-        ...providerConfig,
-        enableFeeOnTransferFeeFetching: true,
-      });
+      const poolAccessor = await this.poolProvider.getPools(
+        poolsToGetTokenPairs,
+        {
+          ...providerConfig,
+          enableFeeOnTransferFeeFetching: true,
+        }
+      );
       for (const address of poolsToGetAddresses) {
         const pool = poolAccessor.getPoolByAddress(address);
         if (pool) {
@@ -106,7 +118,8 @@ export class CachingV2PoolProvider implements IV2PoolProvider {
         const { poolAddress } = this.getPoolAddress(tokenA, tokenB);
         return poolAddressToPool[poolAddress];
       },
-      getPoolByAddress: (address: string): Pair | undefined => poolAddressToPool[address],
+      getPoolByAddress: (address: string): Pair | undefined =>
+        poolAddressToPool[address],
       getAllPools: (): Pair[] => Object.values(poolAddressToPool),
     };
   }

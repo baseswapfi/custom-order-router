@@ -7,7 +7,11 @@ export const OP_STACKS_CHAINS = [
   ChainId.OPTIMISM,
   ChainId.SONEIUM_TESTNET,
 ];
-export const SUPPORTED_CHAINS: ChainId[] = [...OP_STACKS_CHAINS, ChainId.ARBITRUM, ChainId.SONIC_TESTNET];
+export const SUPPORTED_CHAINS: ChainId[] = [
+  ...OP_STACKS_CHAINS,
+  ChainId.ARBITRUM,
+  ChainId.SONIC_TESTNET,
+];
 
 export const V2_SUPPORTED = [...OP_STACKS_CHAINS, ChainId.SONIC_TESTNET];
 
@@ -112,8 +116,16 @@ export enum NativeCurrencyName {
 }
 
 export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
-  [ChainId.BASE]: ['ETH', 'ETHER', '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'],
-  [ChainId.MODE]: ['ETH', 'ETHER', '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'],
+  [ChainId.BASE]: [
+    'ETH',
+    'ETHER',
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+  ],
+  [ChainId.MODE]: [
+    'ETH',
+    'ETHER',
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+  ],
   // [ChainId.MAINNET]: [
   //   'ETH',
   //   'ETHER',
@@ -129,7 +141,11 @@ export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
   //   'ETHER',
   //   '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
   // ],
-  [ChainId.OPTIMISM]: ['ETH', 'ETHER', '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'],
+  [ChainId.OPTIMISM]: [
+    'ETH',
+    'ETHER',
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+  ],
   // [ChainId.OPTIMISM_GOERLI]: [
   //   'ETH',
   //   'ETHER',
@@ -140,7 +156,11 @@ export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
   //   'ETHER',
   //   '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
   // ],
-  [ChainId.ARBITRUM]: ['ETH', 'ETHER', '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'],
+  [ChainId.ARBITRUM]: [
+    'ETH',
+    'ETHER',
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+  ],
   // [ChainId.ARBITRUM_GOERLI]: [
   //   'ETH',
   //   'ETHER',
@@ -181,8 +201,16 @@ export const NATIVE_NAMES_BY_ID: { [chainId: number]: string[] } = {
   //   'ETHER',
   //   '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
   // ],
-  [ChainId.SONIC_TESTNET]: ['S', 'Sonic', '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'],
-  [ChainId.SONEIUM_TESTNET]: ['ETH', 'ETHER', '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'],
+  [ChainId.SONIC_TESTNET]: [
+    'S',
+    'Sonic',
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+  ],
+  [ChainId.SONEIUM_TESTNET]: [
+    'ETH',
+    'ETHER',
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+  ],
 };
 
 export const NATIVE_CURRENCY: { [chainId: number]: NativeCurrencyName } = {
@@ -275,7 +303,9 @@ export const ID_TO_NETWORK_NAME = (id: number): ChainName => {
   }
 };
 
-export const CHAIN_IDS_LIST = Object.values(ChainId).map((c) => c.toString()) as string[];
+export const CHAIN_IDS_LIST = Object.values(ChainId).map((c) =>
+  c.toString()
+) as string[];
 
 export const ID_TO_PROVIDER = (id: ChainId): string => {
   const rpc = process.env[`RPC_${id}`];
@@ -291,7 +321,13 @@ export const ID_TO_PROVIDER = (id: ChainId): string => {
 };
 
 export const WRAPPED_NATIVE_CURRENCY: { [chainId in ChainId]: Token } = {
-  [ChainId.BASE]: new Token(ChainId.BASE, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether'),
+  [ChainId.BASE]: new Token(
+    ChainId.BASE,
+    '0x4200000000000000000000000000000000000006',
+    18,
+    'WETH',
+    'Wrapped Ether'
+  ),
   [ChainId.BASE_GOERLI]: new Token(
     ChainId.BASE_GOERLI,
     '0x4200000000000000000000000000000000000006',
@@ -327,7 +363,13 @@ export const WRAPPED_NATIVE_CURRENCY: { [chainId in ChainId]: Token } = {
     'WETH',
     'Wrapped Ether'
   ),
-  [ChainId.MODE]: new Token(ChainId.MODE, '0x4200000000000000000000000000000000000006', 18, 'WETH', 'Wrapped Ether'),
+  [ChainId.MODE]: new Token(
+    ChainId.MODE,
+    '0x4200000000000000000000000000000000000006',
+    18,
+    'WETH',
+    'Wrapped Ether'
+  ),
   [ChainId.MODE_TESTNET]: new Token(
     ChainId.MODE_TESTNET,
     '0xeb72756ee12309Eae82a0deb9787e69f5b62949c',
@@ -371,6 +413,7 @@ export const WRAPPED_NATIVE_CURRENCY: { [chainId in ChainId]: Token } = {
     'Wrapped Ether'
   ),
 };
+
 export class ExtendedEther extends Ether {
   public get wrapped(): Token {
     if (this.chainId in WRAPPED_NATIVE_CURRENCY) {
@@ -379,12 +422,14 @@ export class ExtendedEther extends Ether {
     throw new Error('Unsupported chain ID');
   }
 
-  private static _cachedExtendedEther: {
-    [chainId: number]: NativeCurrency;
-  } = {};
+  private static _cachedExtendedEther: { [chainId: number]: NativeCurrency } =
+    {};
 
   public static onChain(chainId: number): ExtendedEther {
-    return this._cachedExtendedEther[chainId] ?? (this._cachedExtendedEther[chainId] = new ExtendedEther(chainId));
+    return (
+      this._cachedExtendedEther[chainId] ??
+      (this._cachedExtendedEther[chainId] = new ExtendedEther(chainId))
+    );
   }
 }
 
@@ -393,9 +438,22 @@ const cachedNativeCurrency: { [chainId: number]: NativeCurrency } = {};
 export function nativeOnChain(chainId: number): NativeCurrency {
   if (cachedNativeCurrency[chainId] != undefined) {
     return cachedNativeCurrency[chainId]!;
-  } else {
-    cachedNativeCurrency[chainId] = ExtendedEther.onChain(chainId);
   }
+  // if (isMatic(chainId)) {
+  //   cachedNativeCurrency[chainId] = new MaticNativeCurrency(chainId);
+  // } else if (isCelo(chainId)) {
+  //   cachedNativeCurrency[chainId] = new CeloNativeCurrency(chainId);
+  // } else if (isGnosis(chainId)) {
+  //   cachedNativeCurrency[chainId] = new GnosisNativeCurrency(chainId);
+  // } else if (isMoonbeam(chainId)) {
+  //   cachedNativeCurrency[chainId] = new MoonbeamNativeCurrency(chainId);
+  // } else if (isBnb(chainId)) {
+  //   cachedNativeCurrency[chainId] = new BnbNativeCurrency(chainId);
+  // } else if (isAvax(chainId)) {
+  //   cachedNativeCurrency[chainId] = new AvalancheNativeCurrency(chainId);
+  // } else {
+  //   cachedNativeCurrency[chainId] = ExtendedEther.onChain(chainId);
+  // }
 
   return cachedNativeCurrency[chainId]!;
 }

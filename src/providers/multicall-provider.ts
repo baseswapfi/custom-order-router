@@ -3,7 +3,10 @@ import { BigNumber } from '@ethersproject/bignumber';
 
 import { ProviderConfig } from './provider';
 
-export type CallSameFunctionOnMultipleContractsParams<TFunctionParams, TAdditionalConfig = any> = {
+export type CallSameFunctionOnMultipleContractsParams<
+  TFunctionParams,
+  TAdditionalConfig = any
+> = {
   addresses: string[];
   contractInterface: Interface;
   functionName: string;
@@ -24,7 +27,10 @@ export type CallSameFunctionOnContractWithMultipleParams<
   additionalConfig?: TAdditionalConfig;
 };
 
-export type CallMultipleFunctionsOnSameContractParams<TFunctionParams, TAdditionalConfig = any> = {
+export type CallMultipleFunctionsOnSameContractParams<
+  TFunctionParams,
+  TAdditionalConfig = any
+> = {
   address: string;
   contractInterface: Interface;
   functionNames: string[];
@@ -71,7 +77,10 @@ export abstract class IMulticallProvider<TMulticallConfig = any> {
     TFunctionParams extends any[] | undefined,
     TReturn = any
   >(
-    params: CallSameFunctionOnMultipleContractsParams<TFunctionParams, TMulticallConfig>
+    params: CallSameFunctionOnMultipleContractsParams<
+      TFunctionParams,
+      TMulticallConfig
+    >
   ): Promise<{
     blockNumber: BigNumber;
     results: Result<TReturn>[];
@@ -93,7 +102,10 @@ export abstract class IMulticallProvider<TMulticallConfig = any> {
     TFunctionParams extends any[] | undefined,
     TReturn = any
   >(
-    params: CallSameFunctionOnContractWithMultipleParams<TFunctionParams, TMulticallConfig>
+    params: CallSameFunctionOnContractWithMultipleParams<
+      TFunctionParams,
+      TMulticallConfig
+    >
   ): Promise<{
     blockNumber: BigNumber;
     results: Result<TReturn>[];
@@ -103,7 +115,10 @@ export abstract class IMulticallProvider<TMulticallConfig = any> {
     TFunctionParams extends any[] | undefined,
     TReturn = any
   >(
-    params: CallMultipleFunctionsOnSameContractParams<TFunctionParams, TMulticallConfig>
+    params: CallMultipleFunctionsOnSameContractParams<
+      TFunctionParams,
+      TMulticallConfig
+    >
   ): Promise<{
     blockNumber: BigNumber;
     results: Result<TReturn>[];

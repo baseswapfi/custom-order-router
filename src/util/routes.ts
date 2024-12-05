@@ -1,10 +1,18 @@
 import { Protocol } from '@baseswapfi/router-sdk';
-import { Currency, Percent, V3_CORE_FACTORY_ADDRESSES } from '@baseswapfi/sdk-core';
-import { Pool as V3Pool } from '@baseswapfi/v3-sdk2';
+import {
+  ChainId,
+  Currency,
+  Percent,
+  V3_CORE_FACTORY_ADDRESSES,
+} from '@baseswapfi/sdk-core';
+import { POOL_INIT_CODE_HASH_MAP, Pool as V3Pool } from '@baseswapfi/v3-sdk2';
 import { Pair } from '@baseswapfi/v2-sdk';
 import _ from 'lodash';
 
-import { AlphaRouterConfig, RouteWithValidQuote } from '../routers/alpha-router';
+import {
+  AlphaRouterConfig,
+  RouteWithValidQuote,
+} from '../routers/alpha-router';
 import { MixedRoute, SupportedRoutes } from '../routers/router';
 
 import { CurrencyAmount } from '.';
@@ -34,6 +42,12 @@ export const routeToPools = (route: SupportedRoutes): (V3Pool | Pair)[] => {
   }
 };
 
+export const poolToString = (p: V3Pool | Pair): string => {
+  return `${p.token0.symbol}/${p.token1.symbol}${
+    p instanceof V3Pool ? `/${p.fee / 10000}%` : ``
+  }`;
+};
+
 export const routeToString = (route: SupportedRoutes): string => {
   const routeStr = [];
   const tokens = routeToTokens(route);
@@ -41,13 +55,16 @@ export const routeToString = (route: SupportedRoutes): string => {
   const pools = routeToPools(route);
   const poolFeePath = _.map(pools, (pool) => {
     if (pool instanceof Pair) {
-      return ` -- [${Pair.getAddress((pool as Pair).token0, (pool as Pair).token1)}]`;
+      return ` -- [${Pair.getAddress(
+        (pool as Pair).token0,
+        (pool as Pair).token1
+      )}]`;
     } else if (pool instanceof V3Pool) {
       return ` -- ${pool.fee / 10000}% [${V3Pool.getAddress(
         pool.token0,
         pool.token1,
         pool.fee,
-        undefined,
+        POOL_INIT_CODE_HASH_MAP[pool.chainId as ChainId],
         V3_CORE_FACTORY_ADDRESSES[pool.chainId]
       )}]`;
     } else {
@@ -67,7 +84,9 @@ export const routeToString = (route: SupportedRoutes): string => {
   return routeStr.join('');
 };
 
-export const routeAmountsToString = (routeAmounts: RouteWithValidQuote[]): string => {
+export const routeAmountsToString = (
+  routeAmounts: RouteWithValidQuote[]
+): string => {
   const total = _.reduce(
     routeAmounts,
     (total: CurrencyAmount, cur: RouteWithValidQuote) => {
@@ -80,21 +99,19 @@ export const routeAmountsToString = (routeAmounts: RouteWithValidQuote[]): strin
     const portion = amount.divide(total);
     const percent = new Percent(portion.numerator, portion.denominator);
     /// @dev special case for MIXED routes we want to show user friendly V2+V3 instead
-    return `[${protocol == Protocol.MIXED ? 'V2 + V3' : protocol}] ${percent.toFixed(
-      2
-    )}% = ${routeToString(route)}`;
+    return `[${
+      protocol == Protocol.MIXED ? 'V2 + V3' : protocol
+    }] ${percent.toFixed(2)}% = ${routeToString(route)}`;
   });
 
   return _.join(routeStrings, ', ');
 };
 
-export const routeAmountToString = (routeAmount: RouteWithValidQuote): string => {
+export const routeAmountToString = (
+  routeAmount: RouteWithValidQuote
+): string => {
   const { route, amount } = routeAmount;
   return `${amount.toExact()} = ${routeToString(route)}`;
-};
-
-export const poolToString = (p: V3Pool | Pair): string => {
-  return `${p.token0.symbol}/${p.token1.symbol}${p instanceof V3Pool ? `/${p.fee / 10000}%` : ``}`;
 };
 
 export function shouldWipeoutCachedRoutes(
@@ -138,7 +155,10 @@ export function excludeProtocolPoolRouteFromMixedRoute(
   return mixedRoutes.filter((route) => {
     return (
       route.pools.filter((pool) => {
-        return poolIsInExcludedProtocols(pool as V3Pool | Pair, excludedProtocolsFromMixed);
+        return poolIsInExcludedProtocols(
+          pool as V3Pool | Pair,
+          excludedProtocolsFromMixed
+        );
       }).length == 0
     );
   });

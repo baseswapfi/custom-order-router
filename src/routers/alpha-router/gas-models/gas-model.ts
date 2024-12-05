@@ -9,17 +9,17 @@ import { Pool } from '@baseswapfi/v3-sdk2';
 
 import { ProviderConfig } from '../../../providers/provider';
 import {
-  DAI_ARBITRUM, // TODO: This/these imports are the issue. The providers "module" is undefined when importing on fe
-  DAI_MODE,
+  DAI_ARBITRUM,
   DAI_OPTIMISM,
   USDC_ARBITRUM,
-  USDC_BASE, // TODO: Same here with this
+  USDC_BASE,
   USDC_MODE,
   USDC_NATIVE_ARBITRUM,
   USDC_NATIVE_BASE,
   USDC_NATIVE_OPTIMISM,
   USDC_OPTIMISM,
   USDC_SONEIUM_TESTNET,
+  USDC_WORLDCHAIN,
   USDT_ARBITRUM,
   USDT_MODE,
   USDT_OPTIMISM,
@@ -56,9 +56,10 @@ export const usdGasTokensByChain: { [chainId in ChainId]?: Token[] } = {
     USDT_OPTIMISM,
   ],
   [ChainId.BASE]: [USDC_BASE, USDC_NATIVE_BASE],
-  [ChainId.MODE]: [DAI_MODE, USDC_MODE, USDT_MODE],
+  [ChainId.MODE]: [USDC_MODE, USDT_MODE],
   // [ChainId.SONIC_TESTNET]: [USDC_SONIC_TESTNET],
   [ChainId.SONEIUM_TESTNET]: [USDC_SONEIUM_TESTNET],
+  [ChainId.WORLDCHAIN]: [USDC_WORLDCHAIN],
 };
 
 export type L1ToL2GasCosts = {

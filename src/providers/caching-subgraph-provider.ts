@@ -1,67 +1,42 @@
 import { Protocol } from '@baseswapfi/router-sdk';
-import { ChainId, Token } from '@baseswapfi/sdk-core';
+import { ChainId, Currency, Token } from '@baseswapfi/sdk-core';
 
 import { SubgraphPool } from '../routers/alpha-router/functions/get-candidate-pools';
-import { WRAPPED_NATIVE_CURRENCY } from '../util';
+import { nativeOnChain, WRAPPED_NATIVE_CURRENCY } from '../util';
 
 import { ICache } from './cache';
 import { ProviderConfig } from './provider';
 import {
   ARB_ARBITRUM,
   cbBTC_BASE,
-  // BTC_BNB,
-  // BUSD_BNB,
-  // CELO,
-  // CEUR_CELO,
-  // CUSD_CELO,
   DAI_ARBITRUM,
   DAI_BASE,
   DAI_MODE,
-  // DAI_AVAX,
-  // DAI_BNB,
-  // DAI_CELO,
-  // DAI_MAINNET,
-  // DAI_MOONBEAM,
   DAI_OPTIMISM,
-  // ETH_BNB,
   OP_OPTIMISM,
-  // USDB_BLAST,
-  // USDCE_ZKSYNC,
   USDC_ARBITRUM,
-  // USDC_AVAX,
   USDC_BASE,
   USDC_MODE,
-  // USDC_BNB,
-  // USDC_MAINNET,
-  // USDC_MOONBEAM,
   USDC_NATIVE_ARBITRUM,
   USDC_OPTIMISM,
   USDC_SONEIUM_TESTNET,
-  // USDC_POLYGON,
-  // USDC_ZKSYNC,
   USDT_ARBITRUM,
   USDT_BASE,
   USDT_MODE,
-  // USDT_BNB,
-  // USDT_MAINNET,
   USDT_OPTIMISM,
   WBTC_ARBITRUM,
   WBTC_MODE,
-  // WBTC_MAINNET,
-  // WBTC_MOONBEAM,
   WBTC_OPTIMISM,
-  // WETH_POLYGON,
-  // WMATIC_POLYGON,
-  // WSTETH_MAINNET,
 } from './token-provider';
 import { V3SubgraphPool } from './v3/subgraph-provider';
 
 type ChainTokenList = {
-  readonly [chainId in ChainId]?: Token[];
+  readonly [chainId in ChainId]?: Currency[];
 };
 
 export const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
   [ChainId.OPTIMISM]: [
+    nativeOnChain(ChainId.OPTIMISM),
     WRAPPED_NATIVE_CURRENCY[ChainId.OPTIMISM]!,
     USDC_OPTIMISM,
     DAI_OPTIMISM,
@@ -70,6 +45,7 @@ export const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
     OP_OPTIMISM,
   ],
   [ChainId.ARBITRUM]: [
+    nativeOnChain(ChainId.ARBITRUM),
     WRAPPED_NATIVE_CURRENCY[ChainId.ARBITRUM]!,
     WBTC_ARBITRUM,
     DAI_ARBITRUM,
@@ -78,24 +54,52 @@ export const BASES_TO_CHECK_TRADES_AGAINST: ChainTokenList = {
     USDT_ARBITRUM,
     ARB_ARBITRUM,
   ],
-  [ChainId.BASE]: [WRAPPED_NATIVE_CURRENCY[ChainId.BASE]!, USDC_BASE, USDT_BASE, DAI_BASE, cbBTC_BASE],
-  [ChainId.MODE]: [WRAPPED_NATIVE_CURRENCY[ChainId.MODE], USDC_MODE, DAI_MODE, WBTC_MODE, USDT_MODE],
-  // [ChainId.SONIC_TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.SONIC_TESTNET]],
-  [ChainId.SONEIUM_TESTNET]: [WRAPPED_NATIVE_CURRENCY[ChainId.SONEIUM_TESTNET], USDC_SONEIUM_TESTNET],
+  [ChainId.BASE]: [
+    nativeOnChain(ChainId.BASE),
+    WRAPPED_NATIVE_CURRENCY[ChainId.BASE],
+    USDC_BASE,
+    USDT_BASE,
+    DAI_BASE,
+    cbBTC_BASE,
+  ],
+  [ChainId.MODE]: [
+    nativeOnChain(ChainId.MODE),
+    WRAPPED_NATIVE_CURRENCY[ChainId.MODE],
+    USDC_MODE,
+    DAI_MODE,
+    WBTC_MODE,
+    USDT_MODE,
+  ],
+  // [ChainId.SONIC_TESTNET]: [ nativeOnChain(ChainId.SONIC_TESTNET),WRAPPED_NATIVE_CURRENCY[ChainId.SONIC_TESTNET]],
+  [ChainId.SONEIUM_TESTNET]: [
+    nativeOnChain(ChainId.SONEIUM_TESTNET),
+    WRAPPED_NATIVE_CURRENCY[ChainId.SONEIUM_TESTNET],
+    USDC_SONEIUM_TESTNET,
+  ],
 };
 
 export interface IV3SubgraphProvider {
-  getPools(tokenIn?: Token, tokenOut?: Token, providerConfig?: ProviderConfig): Promise<V3SubgraphPool[]>;
+  getPools(
+    tokenIn?: Token,
+    tokenOut?: Token,
+    providerConfig?: ProviderConfig
+  ): Promise<V3SubgraphPool[]>;
 }
 
 export interface ISubgraphProvider<TSubgraphPool extends SubgraphPool> {
-  getPools(tokenIn?: Token, tokenOut?: Token, providerConfig?: ProviderConfig): Promise<TSubgraphPool[]>;
+  getPools(
+    tokenIn?: Token,
+    tokenOut?: Token,
+    providerConfig?: ProviderConfig
+  ): Promise<TSubgraphPool[]>;
 }
 
-export abstract class CachingSubgraphProvider<TSubgraphPool extends SubgraphPool>
-  implements ISubgraphProvider<TSubgraphPool>
+export abstract class CachingSubgraphProvider<
+  TSubgraphPool extends SubgraphPool
+> implements ISubgraphProvider<TSubgraphPool>
 {
-  private SUBGRAPH_KEY = (chainId: ChainId) => `subgraph-pools-${this.protocol}-${chainId}`;
+  private SUBGRAPH_KEY = (chainId: ChainId) =>
+    `subgraph-pools-${this.protocol}-${chainId}`;
 
   /**
    * Creates an instance of CachingV3SubgraphProvider.

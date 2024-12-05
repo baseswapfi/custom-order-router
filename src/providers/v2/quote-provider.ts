@@ -1,6 +1,9 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import { TradeType } from '@baseswapfi/sdk-core';
-import { InsufficientInputAmountError, InsufficientReservesError } from '@baseswapfi/v2-sdk';
+import {
+  InsufficientInputAmountError,
+  InsufficientReservesError,
+} from '@baseswapfi/v2-sdk';
 
 import { V2Route } from '../../routers/router';
 import { CurrencyAmount } from '../../util/amounts';
@@ -48,7 +51,12 @@ export class V2QuoteProvider implements IV2QuoteProvider {
     routes: V2Route[],
     providerConfig: ProviderConfig
   ): Promise<{ routesWithQuotes: V2RouteWithQuotes[] }> {
-    return this.getQuotes(amountIns, routes, TradeType.EXACT_INPUT, providerConfig);
+    return this.getQuotes(
+      amountIns,
+      routes,
+      TradeType.EXACT_INPUT,
+      providerConfig
+    );
   }
 
   public async getQuotesManyExactOut(
@@ -56,7 +64,12 @@ export class V2QuoteProvider implements IV2QuoteProvider {
     routes: V2Route[],
     providerConfig: ProviderConfig
   ): Promise<{ routesWithQuotes: V2RouteWithQuotes[] }> {
-    return this.getQuotes(amountOuts, routes, TradeType.EXACT_OUTPUT, providerConfig);
+    return this.getQuotes(
+      amountOuts,
+      routes,
+      TradeType.EXACT_OUTPUT,
+      providerConfig
+    );
   }
 
   private async getQuotes(
@@ -108,7 +121,8 @@ export class V2QuoteProvider implements IV2QuoteProvider {
         } catch (err) {
           // Can fail to get quotes, e.g. throws InsufficientReservesError or InsufficientInputAmountError.
           if (err instanceof InsufficientInputAmountError) {
-            insufficientInputAmountErrorCount = insufficientInputAmountErrorCount + 1;
+            insufficientInputAmountErrorCount =
+              insufficientInputAmountErrorCount + 1;
             amountQuotes.push({ amount, quote: null });
           } else if (err instanceof InsufficientReservesError) {
             insufficientReservesErrorCount = insufficientReservesErrorCount + 1;
@@ -119,7 +133,10 @@ export class V2QuoteProvider implements IV2QuoteProvider {
         }
       }
 
-      if (insufficientInputAmountErrorCount > 0 || insufficientReservesErrorCount > 0) {
+      if (
+        insufficientInputAmountErrorCount > 0 ||
+        insufficientReservesErrorCount > 0
+      ) {
         debugStrs.push(
           `${[
             routeToString(route),

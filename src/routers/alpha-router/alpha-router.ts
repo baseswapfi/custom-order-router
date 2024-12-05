@@ -631,6 +631,8 @@ export class AlphaRouter {
         new NodeJSCache(new NodeCache({ stdTTL: 60, useClones: false }))
       );
 
+    // @note We're going with a concrete subgraph provider instance instead of V3SubgraphProviderWithFallBacks and static,
+    // since we do not have a backup list being synced to IPFS (Could use backend API call instead though)
     this.v2SubgraphProvider =
       v2SubgraphProvider ??
       new CachingV2SubgraphProvider(
@@ -649,6 +651,8 @@ export class AlphaRouter {
         new NodeJSCache(new NodeCache({ stdTTL: 360, useClones: false }))
       );
 
+    // @note We're going with a concrete subgraph provider instance instead of V3SubgraphProviderWithFallBacks and static,
+    // since we do not have a backup list being synced to IPFS (Could use backend API call instead though)
     this.v3SubgraphProvider =
       v3SubgraphProvider ??
       new CachingV3SubgraphProvider(
@@ -656,6 +660,20 @@ export class AlphaRouter {
         new V3SubgraphProvider(chainId),
         new NodeJSCache(new NodeCache({ stdTTL: 300, useClones: false }))
       );
+
+    // this.v3SubgraphProvider = new V3SubgraphProviderWithFallBacks([
+    //   new CachingV3SubgraphProvider(
+    //     chainId,
+    //     new URISubgraphProvider(
+    //       chainId,
+    //       `https://cloudflare-ipfs.com/ipns/api.uniswap.org/v1/pools/v3/${chainName}.json`,
+    //       undefined,
+    //       0
+    //     ),
+    //     new NodeJSCache(new NodeCache({ stdTTL: 300, useClones: false }))
+    //   ),
+    //   new StaticV3SubgraphProvider(chainId, this.v3PoolProvider),
+    // ]);
 
     this.blockedTokenListProvider =
       blockedTokenListProvider ??
@@ -686,21 +704,27 @@ export class AlphaRouter {
                 quoteMinSuccessRate: 0.1,
               };
             },
-            {
-              gasLimitOverride: 3_000_000,
-              multicallChunk: 45,
+            (_) => {
+              return {
+                gasLimitOverride: 3_000_000,
+                multicallChunk: 45,
+              };
             },
-            {
-              gasLimitOverride: 3_000_000,
-              multicallChunk: 45,
+            (_) => {
+              return {
+                gasLimitOverride: 3_000_000,
+                multicallChunk: 45,
+              };
             },
-            {
-              baseBlockOffset: -10,
-              rollback: {
-                enabled: true,
-                attemptsBeforeRollback: 1,
-                rollbackBlockOffset: -10,
-              },
+            (_) => {
+              return {
+                baseBlockOffset: -10,
+                rollback: {
+                  enabled: true,
+                  attemptsBeforeRollback: 1,
+                  rollbackBlockOffset: -10,
+                },
+              };
             }
           );
           break;
@@ -708,6 +732,7 @@ export class AlphaRouter {
         case ChainId.BASE_GOERLI:
         case ChainId.MODE:
         case ChainId.SONEIUM_TESTNET:
+        case ChainId.WORLDCHAIN:
           this.onChainQuoteProvider = new OnChainQuoteProvider(
             chainId,
             provider,
@@ -724,21 +749,27 @@ export class AlphaRouter {
                 quoteMinSuccessRate: 0.1,
               };
             },
-            {
-              gasLimitOverride: 3_000_000,
-              multicallChunk: 45,
+            (_) => {
+              return {
+                gasLimitOverride: 3_000_000,
+                multicallChunk: 45,
+              };
             },
-            {
-              gasLimitOverride: 3_000_000,
-              multicallChunk: 45,
+            (_) => {
+              return {
+                gasLimitOverride: 3_000_000,
+                multicallChunk: 45,
+              };
             },
-            {
-              baseBlockOffset: -10,
-              rollback: {
-                enabled: true,
-                attemptsBeforeRollback: 1,
-                rollbackBlockOffset: -10,
-              },
+            (_) => {
+              return {
+                baseBlockOffset: -10,
+                rollback: {
+                  enabled: true,
+                  attemptsBeforeRollback: 1,
+                  rollbackBlockOffset: -10,
+                },
+              };
             }
           );
           break;
@@ -759,13 +790,17 @@ export class AlphaRouter {
                 quoteMinSuccessRate: 0.1,
               };
             },
-            {
-              gasLimitOverride: 30_000_000,
-              multicallChunk: 6,
+            (_) => {
+              return {
+                gasLimitOverride: 30_000_000,
+                multicallChunk: 6,
+              };
             },
-            {
-              gasLimitOverride: 30_000_000,
-              multicallChunk: 6,
+            (_) => {
+              return {
+                gasLimitOverride: 30_000_000,
+                multicallChunk: 6,
+              };
             }
           );
           break;
@@ -776,9 +811,9 @@ export class AlphaRouter {
             this.multicall2Provider,
             DEFAULT_RETRY_OPTIONS,
             (_) => DEFAULT_BATCH_PARAMS,
-            DEFAULT_GAS_ERROR_FAILURE_OVERRIDES,
-            DEFAULT_SUCCESS_RATE_FAILURE_OVERRIDES,
-            DEFAULT_BLOCK_NUMBER_CONFIGS
+            (_) => DEFAULT_GAS_ERROR_FAILURE_OVERRIDES,
+            (_) => DEFAULT_SUCCESS_RATE_FAILURE_OVERRIDES,
+            (_) => DEFAULT_BLOCK_NUMBER_CONFIGS
           );
           break;
       }

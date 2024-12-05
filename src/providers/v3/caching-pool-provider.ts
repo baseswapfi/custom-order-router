@@ -18,8 +18,14 @@ import { IV3PoolProvider, V3PoolAccessor } from './pool-provider';
  * @class CachingV3PoolProvider
  */
 export class CachingV3PoolProvider implements IV3PoolProvider {
-  private POOL_KEY = (chainId: ChainId, address: string, blockNumber?: number) =>
-    blockNumber ? `pool-${chainId}-${address}-${blockNumber}` : `pool-${chainId}-${address}`;
+  private POOL_KEY = (
+    chainId: ChainId,
+    address: string,
+    blockNumber?: number
+  ) =>
+    blockNumber
+      ? `pool-${chainId}-${address}-${blockNumber}`
+      : `pool-${chainId}-${address}`;
 
   /**
    * Creates an instance of CachingV3PoolProvider.
@@ -44,7 +50,11 @@ export class CachingV3PoolProvider implements IV3PoolProvider {
     const blockNumber = await providerConfig?.blockNumber;
 
     for (const [tokenA, tokenB, feeAmount] of tokenPairs) {
-      const { poolAddress, token0, token1 } = this.getPoolAddress(tokenA, tokenB, feeAmount);
+      const { poolAddress, token0, token1 } = this.getPoolAddress(
+        tokenA,
+        tokenB,
+        feeAmount
+      );
 
       if (poolAddressSet.has(poolAddress)) {
         continue;
@@ -56,12 +66,20 @@ export class CachingV3PoolProvider implements IV3PoolProvider {
         this.POOL_KEY(this.chainId, poolAddress, blockNumber)
       );
       if (cachedPool) {
-        metric.putMetric('V3_INMEMORY_CACHING_POOL_HIT_IN_MEMORY', 1, MetricLoggerUnit.None);
+        metric.putMetric(
+          'V3_INMEMORY_CACHING_POOL_HIT_IN_MEMORY',
+          1,
+          MetricLoggerUnit.None
+        );
         poolAddressToPool[poolAddress] = cachedPool;
         continue;
       }
 
-      metric.putMetric('V3_INMEMORY_CACHING_POOL_MISS_NOT_IN_MEMORY', 1, MetricLoggerUnit.None);
+      metric.putMetric(
+        'V3_INMEMORY_CACHING_POOL_MISS_NOT_IN_MEMORY',
+        1,
+        MetricLoggerUnit.None
+      );
       poolsToGetTokenPairs.push([token0, token1, feeAmount]);
       poolsToGetAddresses.push(poolAddress);
     }
@@ -85,23 +103,34 @@ export class CachingV3PoolProvider implements IV3PoolProvider {
     );
 
     if (poolsToGetAddresses.length > 0) {
-      const poolAccessor = await this.poolProvider.getPools(poolsToGetTokenPairs, providerConfig);
+      const poolAccessor = await this.poolProvider.getPools(
+        poolsToGetTokenPairs,
+        providerConfig
+      );
       for (const address of poolsToGetAddresses) {
         const pool = poolAccessor.getPoolByAddress(address);
         if (pool) {
           poolAddressToPool[address] = pool;
           // We don't want to wait for this caching to complete before returning the pools.
-          this.cache.set(this.POOL_KEY(this.chainId, address, blockNumber), pool);
+          this.cache.set(
+            this.POOL_KEY(this.chainId, address, blockNumber),
+            pool
+          );
         }
       }
     }
 
     return {
-      getPool: (tokenA: Token, tokenB: Token, feeAmount: FeeAmount): Pool | undefined => {
+      getPool: (
+        tokenA: Token,
+        tokenB: Token,
+        feeAmount: FeeAmount
+      ): Pool | undefined => {
         const { poolAddress } = this.getPoolAddress(tokenA, tokenB, feeAmount);
         return poolAddressToPool[poolAddress];
       },
-      getPoolByAddress: (address: string): Pool | undefined => poolAddressToPool[address],
+      getPoolByAddress: (address: string): Pool | undefined =>
+        poolAddressToPool[address],
       getAllPools: (): Pool[] => Object.values(poolAddressToPool),
     };
   }

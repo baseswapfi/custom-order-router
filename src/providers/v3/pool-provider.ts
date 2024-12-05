@@ -1,7 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import {
   ChainId,
-  Currency,
   Token,
   V3_CORE_FACTORY_ADDRESSES,
 } from '@baseswapfi/sdk-core';

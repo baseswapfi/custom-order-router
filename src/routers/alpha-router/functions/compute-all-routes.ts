@@ -1,7 +1,9 @@
+import { TPool } from '@baseswapfi/router-sdk/dist/utils/TPool';
 import { Token } from '@baseswapfi/sdk-core';
 import { Pair } from '@baseswapfi/v2-sdk';
 import { Pool as V3Pool } from '@baseswapfi/v3-sdk2';
 
+import { getAddressLowerCase } from '../../../util';
 import { log } from '../../../util/log';
 import { poolToString, routeToString } from '../../../util/routes';
 import { MixedRoute, SupportedRoutes, V2Route, V3Route } from '../../router';
@@ -18,6 +20,7 @@ export function computeAllV3Routes(
     (route: V3Pool[], tokenIn: Token, tokenOut: Token) => {
       return new V3Route(route, tokenIn, tokenOut);
     },
+    (pool: V3Pool, token: Token) => pool.involvesToken(token),
     pools,
     maxHops
   );
@@ -35,27 +38,30 @@ export function computeAllV2Routes(
     (route: Pair[], tokenIn: Token, tokenOut: Token) => {
       return new V2Route(route, tokenIn, tokenOut);
     },
+    (pool: Pair, token: Token) => pool.involvesToken(token),
     pools,
     maxHops
   );
 }
 
 export function computeAllMixedRoutes(
-  tokenIn: Token,
-  tokenOut: Token,
-  parts: (V3Pool | Pair)[],
+  currencyIn: Token,
+  currencyOut: Token,
+  parts: TPool[],
   maxHops: number
 ): MixedRoute[] {
-  const routesRaw = computeAllRoutes<V3Pool | Pair, MixedRoute>(
-    tokenIn,
-    tokenOut,
-    (route: (V3Pool | Pair)[], tokenIn: Token, tokenOut: Token) => {
-      return new MixedRoute(route, tokenIn, tokenOut);
+  Token;
+  const routesRaw = computeAllRoutes<TPool, MixedRoute>(
+    currencyIn,
+    currencyOut,
+    (route: TPool[], currencyIn: Token, currencyOut: Token) => {
+      return new MixedRoute(route, currencyIn, currencyOut);
     },
+    (pool: TPool, currency: Token) => pool.involvesToken(currency),
     parts,
     maxHops
   );
-  /// filter out pure v3 and v2 routes
+  /// filter out pure v4 and v3 and v2 routes
   return routesRaw.filter((route) => {
     return (
       !route.pools.every((pool) => pool instanceof V3Pool) &&
@@ -65,13 +71,14 @@ export function computeAllMixedRoutes(
 }
 
 export function computeAllRoutes<
-  TPool extends Pair | V3Pool,
+  TypePool extends TPool,
   TRoute extends SupportedRoutes
 >(
   tokenIn: Token,
   tokenOut: Token,
-  buildRoute: (route: TPool[], tokenIn: Token, tokenOut: Token) => TRoute,
-  pools: TPool[],
+  buildRoute: (route: TypePool[], tokenIn: Token, tokenOut: Token) => TRoute,
+  involvesToken: (pool: TypePool, token: Token) => boolean,
+  pools: TypePool[],
   maxHops: number
 ): TRoute[] {
   const poolsUsed = Array<boolean>(pools.length).fill(false);
@@ -80,7 +87,7 @@ export function computeAllRoutes<
   const computeRoutes = (
     tokenIn: Token,
     tokenOut: Token,
-    currentRoute: TPool[],
+    currentRoute: TypePool[],
     poolsUsed: boolean[],
     tokensVisited: Set<string>,
     _previousTokenOut?: Token
@@ -91,7 +98,7 @@ export function computeAllRoutes<
 
     if (
       currentRoute.length > 0 &&
-      currentRoute[currentRoute.length - 1]!.involvesToken(tokenOut)
+      involvesToken(currentRoute[currentRoute.length - 1]!, tokenOut)
     ) {
       routes.push(buildRoute([...currentRoute], tokenIn, tokenOut));
       return;
@@ -105,7 +112,7 @@ export function computeAllRoutes<
       const curPool = pools[i]!;
       const previousTokenOut = _previousTokenOut ? _previousTokenOut : tokenIn;
 
-      if (!curPool.involvesToken(previousTokenOut)) {
+      if (!involvesToken(curPool, previousTokenOut)) {
         continue;
       }
 
@@ -113,12 +120,11 @@ export function computeAllRoutes<
         ? curPool.token1
         : curPool.token0;
 
-      // TODO: ROUTE-217 - Support native currency routing in V4
-      if (tokensVisited.has(currentTokenOut.wrapped.address.toLowerCase())) {
+      if (tokensVisited.has(getAddressLowerCase(currentTokenOut))) {
         continue;
       }
 
-      tokensVisited.add(currentTokenOut.wrapped.address.toLowerCase());
+      tokensVisited.add(getAddressLowerCase(currentTokenOut));
       currentRoute.push(curPool);
       poolsUsed[i] = true;
       computeRoutes(
@@ -127,11 +133,11 @@ export function computeAllRoutes<
         currentRoute,
         poolsUsed,
         tokensVisited,
-        currentTokenOut.wrapped
+        currentTokenOut as Token
       );
       poolsUsed[i] = false;
       currentRoute.pop();
-      tokensVisited.delete(currentTokenOut.wrapped.address.toLowerCase());
+      tokensVisited.delete(getAddressLowerCase(currentTokenOut));
     }
   };
 
@@ -140,7 +146,7 @@ export function computeAllRoutes<
     tokenOut,
     [],
     poolsUsed,
-    new Set([tokenIn.address.toLowerCase()])
+    new Set([getAddressLowerCase(tokenIn)])
   );
 
   log.info(

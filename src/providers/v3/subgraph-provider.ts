@@ -1,5 +1,10 @@
 import { Protocol } from '@baseswapfi/router-sdk';
-import { ChainId, SUBGRAPH_URL_MAP, SupportedChainsType, Token } from '@baseswapfi/sdk-core';
+import {
+  ChainId,
+  SUBGRAPH_URL_MAP,
+  SupportedChainsType,
+  Token,
+} from '@baseswapfi/sdk-core';
 
 import { ProviderConfig } from '../provider';
 import { SubgraphProvider } from '../subgraph-provider';
@@ -101,7 +106,9 @@ export class V3SubgraphProvider
    `;
   }
 
-  protected override mapSubgraphPool(rawPool: V3RawSubgraphPool): V3SubgraphPool {
+  protected override mapSubgraphPool(
+    rawPool: V3RawSubgraphPool
+  ): V3SubgraphPool {
     return {
       id: rawPool.id,
       feeTier: rawPool.feeTier,

@@ -1,5 +1,10 @@
 import { parseUnits } from '@ethersproject/units';
-import { ChainId, Currency, CurrencyAmount as CurrencyAmountRaw, Fraction } from '@baseswapfi/sdk-core';
+import {
+  ChainId,
+  Currency,
+  CurrencyAmount as CurrencyAmountRaw,
+  Fraction,
+} from '@baseswapfi/sdk-core';
 import { FeeAmount } from '@baseswapfi/v3-sdk2';
 import JSBI from 'jsbi';
 import { FEE_TIERS } from '../providers/v3/fee-tiers';
@@ -17,16 +22,24 @@ export function parseAmount(value: string, currency: Currency): CurrencyAmount {
 
 export function parseFeeAmount(feeAmountStr: string) {
   switch (feeAmountStr) {
+    case '20000':
+      return FeeAmount.HIGHER_2;
     case '10000':
       return FeeAmount.HIGH;
+    case '8500':
+      return FeeAmount.MEDIUM_85;
     case '2500':
       return FeeAmount.MEDIUM;
+    case '2000':
+      return FeeAmount.MEDIUM_20;
     case '450':
       return FeeAmount.LOW;
     case '350':
       return FeeAmount.LOWER;
     case '80':
       return FeeAmount.LOWEST;
+    case '50':
+      return FeeAmount.LOWER_50;
     case '1':
       return FeeAmount.EXTRA_LOWEST;
     default:
@@ -36,15 +49,23 @@ export function parseFeeAmount(feeAmountStr: string) {
 
 export function unparseFeeAmount(feeAmount: FeeAmount) {
   switch (feeAmount) {
+    case FeeAmount.HIGHER_2:
+      return '20000';
     case FeeAmount.HIGH:
       return '10000';
+    case FeeAmount.MEDIUM_85:
+      return '5500';
     case FeeAmount.MEDIUM:
       return '2500';
+    case FeeAmount.MEDIUM_20:
+      return '2000';
     case FeeAmount.LOW:
       return '450';
     case FeeAmount.LOWER:
       return '350';
     case FeeAmount.LOWEST:
+      return '80';
+    case FeeAmount.LOWER_50:
       return '80';
     case FeeAmount.EXTRA_LOWEST:
       return '1';

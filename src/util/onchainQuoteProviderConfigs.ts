@@ -1,8 +1,15 @@
 import { ChainId } from '@baseswapfi/sdk-core';
 
-import { BatchParams, BlockNumberConfig, FailureOverrides, QuoteRetryOptions } from '../providers';
+import {
+  BatchParams,
+  BlockNumberConfig,
+  FailureOverrides,
+  QuoteRetryOptions,
+} from '../providers';
 
-export const NETWORKS_WITH_SAME_RETRY_OPTIONS = Object.values(ChainId) as ChainId[];
+export const NETWORKS_WITH_SAME_RETRY_OPTIONS = Object.values(
+  ChainId
+) as ChainId[];
 
 export function constructSameRetryOptionsMap<T extends QuoteRetryOptions>(
   retryOptions: T,
@@ -26,7 +33,9 @@ export const RETRY_OPTIONS = {
   ...constructSameRetryOptionsMap(DEFAULT_RETRY_OPTIONS),
 };
 
-export const NETWORKS_WITH_SAME_BATCH_PARAMS = Object.values(ChainId) as ChainId[];
+export const NETWORKS_WITH_SAME_BATCH_PARAMS = Object.values(
+  ChainId
+) as ChainId[];
 
 export function constructSameBatchParamsMap<T extends BatchParams>(
   batchParams: T,
@@ -50,13 +59,19 @@ export const BATCH_PARAMS = {
   ...constructSameBatchParamsMap(DEFAULT_BATCH_PARAMS),
 };
 
-export const NETWORKS_WITH_SAME_GAS_ERROR_FAILURE_OVERRIDES = Object.values(ChainId) as ChainId[];
+export const NETWORKS_WITH_SAME_GAS_ERROR_FAILURE_OVERRIDES = Object.values(
+  ChainId
+) as ChainId[];
 
-export function constructSameGasErrorFailureOverridesMap<T extends FailureOverrides>(
+export function constructSameGasErrorFailureOverridesMap<
+  T extends FailureOverrides
+>(
   gasErrorFailureOverrides: T,
   additionalNetworks: ChainId[] = []
 ): { [chainId: number]: T } {
-  return NETWORKS_WITH_SAME_GAS_ERROR_FAILURE_OVERRIDES.concat(additionalNetworks).reduce<{
+  return NETWORKS_WITH_SAME_GAS_ERROR_FAILURE_OVERRIDES.concat(
+    additionalNetworks
+  ).reduce<{
     [chainId: number]: T;
   }>((memo, chainId) => {
     memo[chainId] = gasErrorFailureOverrides;
@@ -70,16 +85,24 @@ export const DEFAULT_GAS_ERROR_FAILURE_OVERRIDES: FailureOverrides = {
 };
 
 export const GAS_ERROR_FAILURE_OVERRIDES = {
-  ...constructSameGasErrorFailureOverridesMap(DEFAULT_GAS_ERROR_FAILURE_OVERRIDES),
+  ...constructSameGasErrorFailureOverridesMap(
+    DEFAULT_GAS_ERROR_FAILURE_OVERRIDES
+  ),
 };
 
-export const NETWORKS_WITH_SAME_SUCCESS_RATE_FAILURE_OVERRIDES = [ChainId.MODE_TESTNET];
+export const NETWORKS_WITH_SAME_SUCCESS_RATE_FAILURE_OVERRIDES = Object.values(
+  ChainId
+) as ChainId[];
 
-export function constructSameSuccessRateFailureOverridesMap<T extends FailureOverrides>(
+export function constructSameSuccessRateFailureOverridesMap<
+  T extends FailureOverrides
+>(
   successRateFailureOverrides: T,
   additionalNetworks: ChainId[] = []
 ): { [chainId: number]: T } {
-  return NETWORKS_WITH_SAME_SUCCESS_RATE_FAILURE_OVERRIDES.concat(additionalNetworks).reduce<{
+  return NETWORKS_WITH_SAME_SUCCESS_RATE_FAILURE_OVERRIDES.concat(
+    additionalNetworks
+  ).reduce<{
     [chainId: number]: T;
   }>((memo, chainId) => {
     memo[chainId] = successRateFailureOverrides;
@@ -93,16 +116,22 @@ export const DEFAULT_SUCCESS_RATE_FAILURE_OVERRIDES: FailureOverrides = {
 };
 
 export const SUCCESS_RATE_FAILURE_OVERRIDES = {
-  ...constructSameSuccessRateFailureOverridesMap(DEFAULT_SUCCESS_RATE_FAILURE_OVERRIDES),
+  ...constructSameSuccessRateFailureOverridesMap(
+    DEFAULT_SUCCESS_RATE_FAILURE_OVERRIDES
+  ),
 };
 
-export const NETWORKS_WITH_SAME_BLOCK_NUMBER_CONFIGS = Object.values(ChainId) as ChainId[];
+export const NETWORKS_WITH_SAME_BLOCK_NUMBER_CONFIGS = Object.values(
+  ChainId
+) as ChainId[];
 
 export function constructSameBlockNumberConfigsMap<T extends BlockNumberConfig>(
   blockNumberConfigs: T,
   additionalNetworks: ChainId[] = []
 ): { [chainId: number]: T } {
-  return NETWORKS_WITH_SAME_BLOCK_NUMBER_CONFIGS.concat(additionalNetworks).reduce<{
+  return NETWORKS_WITH_SAME_BLOCK_NUMBER_CONFIGS.concat(
+    additionalNetworks
+  ).reduce<{
     [chainId: number]: T;
   }>((memo, chainId) => {
     memo[chainId] = blockNumberConfigs;
