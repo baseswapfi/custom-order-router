@@ -672,8 +672,6 @@ export async function getV2CandidatePools({
     ];
   }
 
-  const wethAddress = WRAPPED_NATIVE_CURRENCY[chainId]!.address.toLowerCase();
-
   const topByBaseWithTokenInMap: Map<
     string,
     SubcategorySelectionPools<V2SubgraphPool>
@@ -723,6 +721,7 @@ export async function getV2CandidatePools({
 
   // Used to track how many iterations we do in the first loop
   let loopsInFirstIteration = 0;
+  const wethAddress = WRAPPED_NATIVE_CURRENCY[chainId]!.address.toLowerCase();
 
   // Filtering step for up to first hop
   // The pools are pre-sorted, so we can just iterate through them and fill our heuristics.
