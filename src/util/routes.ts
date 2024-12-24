@@ -31,13 +31,12 @@ export const routeToTokens = (route: SupportedRoutes): Currency[] => {
 };
 
 export const routeToPools = (route: SupportedRoutes): (V3Pool | Pair)[] => {
-  log.info('routeToPools', { route });
   switch (route.protocol) {
     case Protocol.V3:
     case Protocol.MIXED:
       return route.pools as (V3Pool | Pair)[];
     case Protocol.V2:
-      return route.pairs;
+      return route.pairs as Pair[];
     default:
       throw new Error(`Unsupported route ${JSON.stringify(route)}`);
   }
@@ -53,14 +52,10 @@ export const routeToString = (route: SupportedRoutes): string => {
   const routeStr = [];
   const tokens = routeToTokens(route);
   const tokenPath = _.map(tokens, (token) => `${token.symbol}`);
-  const pools = routeToPools(route);
+  const pools: any[] = routeToPools(route);
+
   const poolFeePath = _.map(pools, (pool) => {
-    if (pool instanceof Pair) {
-      return ` -- [${Pair.getAddress(
-        (pool as Pair).token0,
-        (pool as Pair).token1
-      )}]`;
-    } else if (pool instanceof V3Pool) {
+    if (pool.fee) {
       return ` -- ${pool.fee / 10000}% [${V3Pool.getAddress(
         pool.token0,
         pool.token1,
@@ -68,9 +63,31 @@ export const routeToString = (route: SupportedRoutes): string => {
         POOL_INIT_CODE_HASH_MAP[pool.chainId as ChainId],
         V3_CORE_FACTORY_ADDRESSES[pool.chainId]
       )}]`;
+    } else if (pool.reserve0) {
+      return ` -- [${Pair.getAddress(
+        (pool as Pair).token0,
+        (pool as Pair).token1
+      )}]`;
     } else {
       throw new Error(`Unsupported pool ${JSON.stringify(pool)}`);
     }
+
+    // if (pool instanceof Pair) {
+    //   return ` -- [${Pair.getAddress(
+    //     (pool as Pair).token0,
+    //     (pool as Pair).token1
+    //   )}]`;
+    // } else if (pool instanceof V3Pool) {
+    //   return ` -- ${pool.fee / 10000}% [${V3Pool.getAddress(
+    //     pool.token0,
+    //     pool.token1,
+    //     pool.fee,
+    //     POOL_INIT_CODE_HASH_MAP[pool.chainId as ChainId],
+    //     V3_CORE_FACTORY_ADDRESSES[pool.chainId]
+    //   )}]`;
+    // } else {
+    //   throw new Error(`Unsupported pool ${JSON.stringify(pool)}`);
+    // }
   });
 
   for (let i = 0; i < tokenPath.length; i++) {
