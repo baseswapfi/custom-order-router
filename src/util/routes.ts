@@ -15,7 +15,7 @@ import {
 } from '../routers/alpha-router';
 import { MixedRoute, SupportedRoutes } from '../routers/router';
 
-import { CurrencyAmount } from '.';
+import { CurrencyAmount, log } from '.';
 import { CachedRoutes } from '../providers';
 
 export const routeToTokens = (route: SupportedRoutes): Currency[] => {
@@ -31,6 +31,7 @@ export const routeToTokens = (route: SupportedRoutes): Currency[] => {
 };
 
 export const routeToPools = (route: SupportedRoutes): (V3Pool | Pair)[] => {
+  log.info('routeToPools', { route });
   switch (route.protocol) {
     case Protocol.V3:
     case Protocol.MIXED:
@@ -70,8 +71,6 @@ export const routeToString = (route: SupportedRoutes): string => {
     } else {
       throw new Error(`Unsupported pool ${JSON.stringify(pool)}`);
     }
-
-    return `${poolToString(pool)} --> `;
   });
 
   for (let i = 0; i < tokenPath.length; i++) {

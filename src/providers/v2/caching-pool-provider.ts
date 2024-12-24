@@ -97,7 +97,6 @@ export class CachingV2PoolProvider implements IV2PoolProvider {
         poolsToGetTokenPairs,
         {
           ...providerConfig,
-          enableFeeOnTransferFeeFetching: true,
         }
       );
       for (const address of poolsToGetAddresses) {
