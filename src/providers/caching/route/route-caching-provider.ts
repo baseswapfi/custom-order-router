@@ -5,7 +5,12 @@
  * @interface IRouteCachingProvider
  */
 import { Protocol } from '@baseswapfi/router-sdk';
-import { ChainId, Currency, CurrencyAmount, Token, TradeType } from '@baseswapfi/sdk-core';
+import {
+  ChainId,
+  Currency,
+  CurrencyAmount,
+  TradeType,
+} from '@baseswapfi/sdk-core';
 
 import { CacheMode } from './model';
 import { CachedRoutes } from './model/cached-routes';
@@ -38,8 +43,13 @@ export abstract class IRouteCachingProvider {
     optimistic = false
   ): Promise<CachedRoutes | undefined> => {
     if (
-      (await this.getCacheMode(chainId, amount, quoteCurrency, tradeType, protocols)) ==
-      CacheMode.Darkmode
+      (await this.getCacheMode(
+        chainId,
+        amount,
+        quoteCurrency,
+        tradeType,
+        protocols
+      )) == CacheMode.Darkmode
     ) {
       return undefined;
     }
@@ -71,11 +81,17 @@ export abstract class IRouteCachingProvider {
     cachedRoutes: CachedRoutes,
     amount: CurrencyAmount<Currency>
   ): Promise<boolean> => {
-    if ((await this.getCacheModeFromCachedRoutes(cachedRoutes, amount)) == CacheMode.Darkmode) {
+    if (
+      (await this.getCacheModeFromCachedRoutes(cachedRoutes, amount)) ==
+      CacheMode.Darkmode
+    ) {
       return false;
     }
 
-    cachedRoutes.blocksToLive = await this._getBlocksToLive(cachedRoutes, amount);
+    cachedRoutes.blocksToLive = await this._getBlocksToLive(
+      cachedRoutes,
+      amount
+    );
 
     return this._setCachedRoute(cachedRoutes, amount);
   };
@@ -126,7 +142,9 @@ export abstract class IRouteCachingProvider {
     blockNumber: number,
     optimistic: boolean
   ): CachedRoutes | undefined {
-    return cachedRoutes?.notExpired(blockNumber, optimistic) ? cachedRoutes : undefined;
+    return cachedRoutes?.notExpired(blockNumber, optimistic)
+      ? cachedRoutes
+      : undefined;
   }
 
   /**
